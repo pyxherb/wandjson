@@ -15,7 +15,7 @@ WANDJSON_API void parser::skipWhitespaces(ParseContext &parseContext) {
 			case '\v':
 				++parseContext.i;
 				continue;
-			default:
+			default:;
 		}
 		break;
 	}
@@ -93,7 +93,7 @@ WANDJSON_API InternalExceptionPointer parser::parseStringEscape(ParseContext &pa
 						uc += d - 'A' + 10;
 						break;
 					default:
-						return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Invalid string escape"));
+						return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Invalid string escape"));
 				}
 			}
 
@@ -117,7 +117,7 @@ WANDJSON_API InternalExceptionPointer parser::parseStringEscape(ParseContext &pa
 			break;
 		}
 		default:
-			return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Invalid string escape"));
+			return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Invalid string escape"));
 	}
 
 	return {};
@@ -125,20 +125,20 @@ WANDJSON_API InternalExceptionPointer parser::parseStringEscape(ParseContext &pa
 
 WANDJSON_API InternalExceptionPointer parser::parseString(ParseContext &parseContext, peff::String &stringOut) {
 	char c;
-	peff::String s(parseContext.allocator);
+	peff::String s(parseContext.allocator.get());
 	for (;;) {
 		switch ((c = parseContext.nextChar())) {
 			case '\"':
+				goto end;
+			case '\\':
 				if (auto e = parseStringEscape(parseContext, s)) {
 					return e;
 				}
-				goto end;
-			case '\\':
 				break;
 			case '\r':
 			case '\n':
 			case '\0':
-				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unterminated string"));
+				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unterminated string"));
 			default:
 				if (!s.pushBack(+c))
 					return OutOfMemoryError::alloc();
@@ -146,77 +146,337 @@ WANDJSON_API InternalExceptionPointer parser::parseString(ParseContext &parseCon
 	}
 
 end:
-	if (parseContext.nextChar() != '\"') {
-		return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Expecting \""));
-	}
-
 	stringOut = std::move(s);
 	return {};
 }
 
-WANDJSON_API InternalExceptionPointer parser::parseObject(ParseContext &parseContext) {
-}
+WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t length, peff::Alloc *allocator, std::unique_ptr<Value, ValueDeleter> &valueOut) {
+	InternalExceptionPointer e;
 
-WANDJSON_API InternalExceptionPointer parser::parseValue(ParseContext &parseContext, std::unique_ptr<Value, ValueDeleter> &valueOut) {
-	switch (parseContext.nextChar()) {
-		case '{': {
-			break;
+	ParseContext parseContext(allocator);
+
+	parseContext.src = src;
+	parseContext.length = length;
+
+	{
+		ParseFrame parseFrame;
+
+		if (!(parseContext.parseFrames.pushBack(std::move(parseFrame)))) {
+			return OutOfMemoryError::alloc();
 		}
-		case '[': {
-			break;
-		}
-		case '-':
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9': {
-			break;
-		}
-		case 't': {
-			if (parseContext.nextChar() != 'r') {
-				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unrecognized character"));
-			}
-			if (parseContext.nextChar() != 'u') {
-				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unrecognized character"));
-			}
-			if (parseContext.nextChar() != 'e') {
-				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unrecognized character"));
-			}
-		}
-		case 'f': {
-			if (parseContext.nextChar() != 'a') {
-				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unrecognized character"));
-			}
-			if (parseContext.nextChar() != 'l') {
-				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unrecognized character"));
-			}
-			if (parseContext.nextChar() != 's') {
-				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unrecognized character"));
-			}
-			if (parseContext.nextChar() != 'e') {
-				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unrecognized character"));
-			}
-		}
-		case 'n': {
-			if (parseContext.nextChar() != 'u') {
-				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unrecognized character"));
-			}
-			if (parseContext.nextChar() != 'l') {
-				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unrecognized character"));
-			}
-			if (parseContext.nextChar() != 'l') {
-				return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unrecognized character"));
-			}
-		}
-		default:
-			return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator, parseContext.i, "Unrecognized character"));
 	}
+
+	{
+		ParseFrame initialFrame;
+
+		if (!(parseContext.parseFrames.pushBack(std::move(initialFrame)))) {
+			return OutOfMemoryError::alloc();
+		}
+	}
+
+	do {
+		skipWhitespaces(parseContext);
+
+		ParseFrame &currentFrame = parseContext.parseFrames.back();
+
+		switch (currentFrame.parseState) {
+			case ParseState::Initial: {
+				char c;
+				switch ((c = parseContext.nextChar())) {
+					case '{': {
+						currentFrame.parseState = ParseState::StartParsingObject;
+						if (!(currentFrame.prevObject = std::unique_ptr<ObjectValue, ValueDeleter>(ObjectValue::alloc(parseContext.allocator.get())))) {
+							return OutOfMemoryError::alloc();
+						}
+
+						continue;
+					}
+					case '[': {
+						currentFrame.parseState = ParseState::StartParsingArray;
+						if (!(currentFrame.prevArray = std::unique_ptr<ArrayValue, ValueDeleter>(ArrayValue::alloc(parseContext.allocator.get())))) {
+							return OutOfMemoryError::alloc();
+						}
+
+						continue;
+					}
+					case '"': {
+						peff::String s(parseContext.allocator.get());
+						if ((e = parseString(parseContext, s))) {
+							return e;
+						}
+
+						parseContext.parseFrames.popBack();
+						if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(StringValue::alloc(parseContext.allocator.get(), std::move(s))))) {
+							return OutOfMemoryError::alloc();
+						}
+						continue;
+					}
+					case '-':
+					case '0':
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9': {
+						bool isDecimal = false;
+						size_t initialI = parseContext.i;
+
+						for (;;) {
+							switch (parseContext.peekChar()) {
+								case '0':
+								case '1':
+								case '2':
+								case '3':
+								case '4':
+								case '5':
+								case '6':
+								case '7':
+								case '8':
+								case '9':
+									parseContext.nextChar();
+									break;
+								default:
+									goto parseNumberDigitsEnd;
+							}
+						}
+
+					parseNumberDigitsEnd:
+						if (parseContext.peekChar() == '.') {
+							parseContext.nextChar();
+							isDecimal = true;
+						}
+
+						if (isDecimal) {
+							for (;;) {
+								switch (parseContext.peekChar()) {
+									case '0':
+									case '1':
+									case '2':
+									case '3':
+									case '4':
+									case '5':
+									case '6':
+									case '7':
+									case '8':
+									case '9':
+										parseContext.nextChar();
+										break;
+									default:
+										goto parseNumberDecimalDigitsEnd;
+								}
+							}
+						parseNumberDecimalDigitsEnd:;
+
+							switch (parseContext.peekChar()) {
+								case 'e':
+								case 'E':
+									parseContext.nextChar();
+
+									switch (parseContext.peekChar()) {
+										case '+':
+										case '-':
+											parseContext.nextChar();
+											break;
+										default:;
+									}
+
+									for (;;) {
+										switch (parseContext.peekChar()) {
+											case '0':
+											case '1':
+											case '2':
+											case '3':
+											case '4':
+											case '5':
+											case '6':
+											case '7':
+											case '8':
+											case '9':
+												parseContext.nextChar();
+												break;
+											default:
+												goto parseNumberExponentsEnd;
+										}
+									}
+
+								parseNumberExponentsEnd:;
+								default:;
+							}
+						}
+
+						parseContext.parseFrames.popBack();
+						if (isDecimal) {
+							if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), strtod(parseContext.src + initialI, nullptr))))) {
+								return OutOfMemoryError::alloc();
+							}
+						} else {
+							if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), strtoull(parseContext.src + initialI, nullptr, 10))))) {
+								return OutOfMemoryError::alloc();
+							}
+						}
+						continue;
+					}
+					case 't': {
+						if (parseContext.nextChar() != 'r') {
+							return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+						}
+						if (parseContext.nextChar() != 'u') {
+							return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+						}
+						if (parseContext.nextChar() != 'e') {
+							return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+						}
+
+						parseContext.parseFrames.popBack();
+						if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(BooleanValue::alloc(parseContext.allocator.get(), true)))) {
+							return OutOfMemoryError::alloc();
+						}
+						continue;
+					}
+					case 'f': {
+						if (parseContext.nextChar() != 'a') {
+							return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+						}
+						if (parseContext.nextChar() != 'l') {
+							return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+						}
+						if (parseContext.nextChar() != 's') {
+							return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+						}
+						if (parseContext.nextChar() != 'e') {
+							return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+						}
+
+						parseContext.parseFrames.popBack();
+						if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(BooleanValue::alloc(parseContext.allocator.get(), false)))) {
+							return OutOfMemoryError::alloc();
+						}
+						continue;
+					}
+					case 'n': {
+						if (parseContext.nextChar() != 'u') {
+							return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+						}
+						if (parseContext.nextChar() != 'l') {
+							return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+						}
+						if (parseContext.nextChar() != 'l') {
+							return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+						}
+
+						parseContext.parseFrames.popBack();
+						if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NullValue::alloc(parseContext.allocator.get())))) {
+							return OutOfMemoryError::alloc();
+						}
+						continue;
+					}
+					default:
+						return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+				}
+				std::terminate();
+			}
+			case ParseState::ParsingObject: {
+				if (!currentFrame.prevObject->data.insert(currentFrame.prevKey.release(), std::move(currentFrame.receivedValue))) {
+					return OutOfMemoryError::alloc();
+				}
+
+				skipWhitespaces(parseContext);
+
+				switch (parseContext.nextChar()) {
+					case ',':
+						break;
+					case '}': {
+						skipWhitespaces(parseContext);
+						std::unique_ptr<ObjectValue, ValueDeleter> object = std::move(currentFrame.prevObject);
+						parseContext.parseFrames.popBack();
+						parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(object.release());
+						continue;
+					}
+					default:
+						return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+				}
+
+				[[fallthrough]];
+			}
+			case ParseState::StartParsingObject: {
+				skipWhitespaces(parseContext);
+
+				peff::String key(parseContext.allocator.get());
+
+				if ((parseContext.nextChar()) != '"') {
+					return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Expecting \""));
+				}
+
+				if ((e = parseString(parseContext, key))) {
+					return e;
+				}
+
+				skipWhitespaces(parseContext);
+
+				if ((parseContext.nextChar()) != ':') {
+					return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Expecting :"));
+				}
+
+				skipWhitespaces(parseContext);
+
+				currentFrame.prevKey.moveFrom(std::move(key));
+				currentFrame.parseState = ParseState::ParsingObject;
+
+				ParseFrame newFrame;
+
+				newFrame.parseState = ParseState::Initial;
+				if (!parseContext.parseFrames.pushBack(std::move(newFrame))) {
+					return OutOfMemoryError::alloc();
+				}
+
+				continue;
+			}
+			case ParseState::ParsingArray: {
+				if (!currentFrame.prevArray->data.pushBack(std::move(currentFrame.receivedValue))) {
+					return OutOfMemoryError::alloc();
+				}
+
+				skipWhitespaces(parseContext);
+
+				switch (parseContext.nextChar()) {
+					case ',':
+						skipWhitespaces(parseContext);
+						break;
+					case ']': {
+						std::unique_ptr<ArrayValue, ValueDeleter> object = std::move(currentFrame.prevArray);
+						parseContext.parseFrames.popBack();
+						parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(object.release());
+						skipWhitespaces(parseContext);
+						continue;
+					}
+					default:
+						return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Unrecognized character"));
+				}
+
+				[[fallthrough]];
+			}
+			case ParseState::StartParsingArray: {
+				skipWhitespaces(parseContext);
+
+				currentFrame.parseState = ParseState::ParsingArray;
+
+				ParseFrame newFrame;
+
+				newFrame.parseState = ParseState::Initial;
+				if (!parseContext.parseFrames.pushBack(std::move(newFrame))) {
+					return OutOfMemoryError::alloc();
+				}
+
+				continue;
+			}
+		}
+	} while (parseContext.parseFrames.size() > 1);
+
+	valueOut = std::move(parseContext.parseFrames.back().receivedValue);
 
 	return {};
 }

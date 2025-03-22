@@ -52,7 +52,7 @@ namespace wandjson {
 		WANDJSON_API NumberValue(peff::Alloc *allocator, double data);
 		WANDJSON_API virtual ~NumberValue();
 
-		WANDJSON_API virtual void dealloc() override;
+		WANDJSON_API virtual void dealloc() noexcept override;
 
 		WANDJSON_API static NumberValue *alloc(peff::Alloc *allocator, uint64_t data) noexcept;
 		WANDJSON_API static NumberValue *alloc(peff::Alloc *allocator, double data) noexcept;
@@ -73,7 +73,7 @@ namespace wandjson {
 		WANDJSON_API StringValue(peff::Alloc *allocator, peff::String &&data);
 		WANDJSON_API virtual ~StringValue();
 
-		WANDJSON_API virtual void dealloc() override;
+		WANDJSON_API virtual void dealloc() noexcept override;
 
 		WANDJSON_API static StringValue *alloc(peff::Alloc *allocator, peff::String &&data) noexcept;
 	};
@@ -85,7 +85,7 @@ namespace wandjson {
 		WANDJSON_API ArrayValue(peff::Alloc *allocator);
 		WANDJSON_API virtual ~ArrayValue();
 
-		WANDJSON_API virtual void dealloc() override;
+		WANDJSON_API virtual void dealloc() noexcept override;
 
 		WANDJSON_API static ArrayValue *alloc(peff::Alloc *allocator) noexcept;
 	};
@@ -97,7 +97,7 @@ namespace wandjson {
 		WANDJSON_API ObjectValue(peff::Alloc *allocator);
 		WANDJSON_API virtual ~ObjectValue();
 
-		WANDJSON_API virtual void dealloc() override;
+		WANDJSON_API virtual void dealloc() noexcept override;
 
 		WANDJSON_API static ObjectValue *alloc(peff::Alloc *allocator) noexcept;
 	};
@@ -109,7 +109,7 @@ namespace wandjson {
 		WANDJSON_API BooleanValue(peff::Alloc *allocator, bool data);
 		WANDJSON_API virtual ~BooleanValue();
 
-		WANDJSON_API virtual void dealloc() override;
+		WANDJSON_API virtual void dealloc() noexcept override;
 
 		WANDJSON_API static BooleanValue *alloc(peff::Alloc *allocator, bool data) noexcept;
 	};
@@ -119,7 +119,7 @@ namespace wandjson {
 		WANDJSON_API NullValue(peff::Alloc *allocator);
 		WANDJSON_API virtual ~NullValue();
 
-		WANDJSON_API virtual void dealloc() override;
+		WANDJSON_API virtual void dealloc() noexcept override;
 
 		WANDJSON_API static NullValue *alloc(peff::Alloc *allocator) noexcept;
 	};
