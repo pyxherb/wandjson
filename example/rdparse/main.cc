@@ -12,14 +12,18 @@ int main() {
 	is.read(testXml.get(), size);
 
 	std::unique_ptr<wandjson::Value, wandjson::ValueDeleter> v;
-	wandjson::InternalExceptionPointer e = wandjson::parser::parseValue(testXml.get(), size, peff::getDefaultAlloc(), v);
+
+	std::string_view sv(testXml.get(), size);
+	wandjson::StringReader sr(sv);
+
+	wandjson::InternalExceptionPointer e = wandjson::parser::parseValue(&sr, peff::getDefaultAlloc(), v);
 
 	if (e) {
 		switch (e->kind) {
 			case wandjson::ErrorKind::SyntaxError: {
 				wandjson::SyntaxError *ep = ((wandjson::SyntaxError *)e.get());
-				std::string_view sv(testXml.get(), ep->off);
-				printf("Syntax error at %d, %d: %s\n", (int)std::count(sv.begin(), sv.end(), '\n') + 1, (int)(sv.size() - sv.find_last_of('\n')) + 1, ep->message);
+				std::string_view subview(sv.substr(0, ep->off));
+				printf("Syntax error at %d, %d: %s\n", (int)std::count(sv.data(), sv.data() + ep->off + 1, '\n') + 1, (int)(ep->off - subview.find_last_of('\n')) + 1, ep->message);
 				e.reset();
 				break;
 			}

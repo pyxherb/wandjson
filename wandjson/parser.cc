@@ -3,22 +3,39 @@
 using namespace wandjson;
 using namespace wandjson::parser;
 
-WANDJSON_API void parser::skipWhitespaces(ParseContext &parseContext) {
-	for (;;) {
-		if (parseContext.i >= parseContext.length)
-			break;
-		switch (parseContext.src[parseContext.i]) {
-			case ' ':
-			case '\r':
-			case '\t':
-			case '\n':
-			case '\v':
-				++parseContext.i;
-				continue;
-			default:;
-		}
-		break;
+WANDJSON_API Reader::~Reader() {
+}
+
+WANDJSON_API StringReader::StringReader(const std::string_view &src) : src(src) {
+}
+
+WANDJSON_API StringReader::~StringReader() {
+}
+
+WANDJSON_API char StringReader::nextChar() {
+	if (i >= src.size())
+		return '\0';
+	return src[i++];
+}
+
+WANDJSON_API bool parser::isSpaceChar(char c) {
+	switch (c) {
+		case ' ':
+		case '\r':
+		case '\t':
+		case '\n':
+		case '\v':
+			return true;
+		default:;
 	}
+	return false;
+}
+
+WANDJSON_API char parser::skipWhitespaces(ParseContext &parseContext) {
+	char c;
+	while (isSpaceChar((c = parseContext.nextChar())))
+		;
+	return c;
 }
 
 WANDJSON_API InternalExceptionPointer parser::parseStringEscape(ParseContext &parseContext, peff::String &stringOut) {
@@ -150,13 +167,12 @@ end:
 	return {};
 }
 
-WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t length, peff::Alloc *allocator, std::unique_ptr<Value, ValueDeleter> &valueOut) {
+WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::Alloc *allocator, std::unique_ptr<Value, ValueDeleter> &valueOut) {
 	InternalExceptionPointer e;
 
 	ParseContext parseContext(allocator);
 
-	parseContext.src = src;
-	parseContext.length = length;
+	parseContext.reader = reader;
 
 	{
 		ParseFrame parseFrame;
@@ -174,15 +190,16 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t
 		}
 	}
 
-	do {
-		skipWhitespaces(parseContext);
+	char c;
 
-		ParseFrame &currentFrame = parseContext.parseFrames.back();
+	while (parseContext.parseFrames.size() > 1) {
+		c = skipWhitespaces(parseContext);
+	reparseWithInitialChar:
 
-		switch (currentFrame.parseState) {
+		switch (parseContext.parseFrames.back().parseState) {
 			case ParseState::Initial: {
-				char c;
-				switch ((c = parseContext.nextChar())) {
+				ParseFrame &currentFrame = parseContext.parseFrames.back();
+				switch (c) {
 					case '{': {
 						currentFrame.parseState = ParseState::StartParsingObject;
 						if (!(currentFrame.prevObject = std::unique_ptr<ObjectValue, ValueDeleter>(ObjectValue::alloc(parseContext.allocator.get())))) {
@@ -222,11 +239,16 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t
 					case '7':
 					case '8':
 					case '9': {
+						peff::String s(allocator);
 						bool isDecimal = false;
 						size_t initialI = parseContext.i;
 
+						if (!s.pushBack(+c)) {
+							return OutOfMemoryError::alloc();
+						}
+
 						for (;;) {
-							switch (parseContext.peekChar()) {
+							switch ((c = parseContext.nextChar())) {
 								case '0':
 								case '1':
 								case '2':
@@ -237,22 +259,26 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t
 								case '7':
 								case '8':
 								case '9':
-									parseContext.nextChar();
+									if (!s.pushBack(+c)) {
+										return OutOfMemoryError::alloc();
+									}
 									break;
-								default:
+								case '.':
 									goto parseNumberDigitsEnd;
+								default:
+									goto parseNumberEnd;
 							}
 						}
 
 					parseNumberDigitsEnd:
-						if (parseContext.peekChar() == '.') {
+						if (c == '.') {
 							parseContext.nextChar();
 							isDecimal = true;
 						}
 
 						if (isDecimal) {
 							for (;;) {
-								switch (parseContext.peekChar()) {
+								switch ((c = parseContext.nextChar())) {
 									case '0':
 									case '1':
 									case '2':
@@ -263,62 +289,83 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t
 									case '7':
 									case '8':
 									case '9':
-										parseContext.nextChar();
+										if (!s.pushBack(+c)) {
+											return OutOfMemoryError::alloc();
+										}
 										break;
-									default:
+									case 'e':
+									case 'E':
 										goto parseNumberDecimalDigitsEnd;
+									default:
+										goto parseNumberEnd;
 								}
 							}
+
 						parseNumberDecimalDigitsEnd:;
-
-							switch (parseContext.peekChar()) {
-								case 'e':
-								case 'E':
-									parseContext.nextChar();
-
-									switch (parseContext.peekChar()) {
-										case '+':
-										case '-':
-											parseContext.nextChar();
-											break;
-										default:;
+							switch ((c = parseContext.nextChar())) {
+								case '+':
+								case '-':
+									if (!s.pushBack(+c)) {
+										return OutOfMemoryError::alloc();
 									}
+									break;
+								case '0':
+								case '1':
+								case '2':
+								case '3':
+								case '4':
+								case '5':
+								case '6':
+								case '7':
+								case '8':
+								case '9':
+									if (!s.pushBack(+c)) {
+										return OutOfMemoryError::alloc();
+									}
+									break;
+								default:
+									return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Malformed number"));
+							}
 
-									for (;;) {
-										switch (parseContext.peekChar()) {
-											case '0':
-											case '1':
-											case '2':
-											case '3':
-											case '4':
-											case '5':
-											case '6':
-											case '7':
-											case '8':
-											case '9':
-												parseContext.nextChar();
-												break;
-											default:
-												goto parseNumberExponentsEnd;
+							for (;;) {
+								switch ((c = parseContext.nextChar())) {
+									case '0':
+									case '1':
+									case '2':
+									case '3':
+									case '4':
+									case '5':
+									case '6':
+									case '7':
+									case '8':
+									case '9':
+										if (!s.pushBack(+c)) {
+											return OutOfMemoryError::alloc();
 										}
-									}
-
-								parseNumberExponentsEnd:;
-								default:;
+										break;
+									default:
+										goto parseNumberEnd;
+								}
 							}
 						}
 
+					parseNumberEnd:
 						parseContext.parseFrames.popBack();
 						if (isDecimal) {
-							if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), strtod(parseContext.src + initialI, nullptr))))) {
+							if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), strtod(s.data(), nullptr))))) {
 								return OutOfMemoryError::alloc();
 							}
 						} else {
-							if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), strtoull(parseContext.src + initialI, nullptr, 10))))) {
+							if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), strtoull(s.data(), nullptr, 10))))) {
 								return OutOfMemoryError::alloc();
 							}
 						}
-						continue;
+
+						if (isSpaceChar(c)) {
+							c = skipWhitespaces(parseContext);
+						}
+
+						goto reparseWithInitialChar;
 					}
 					case 't': {
 						if (parseContext.nextChar() != 'r') {
@@ -380,17 +427,17 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t
 				std::terminate();
 			}
 			case ParseState::ParsingObject: {
+				ParseFrame &currentFrame = parseContext.parseFrames.back();
+
 				if (!currentFrame.prevObject->data.insert(currentFrame.prevKey.release(), std::move(currentFrame.receivedValue))) {
 					return OutOfMemoryError::alloc();
 				}
 
-				skipWhitespaces(parseContext);
-
-				switch (parseContext.nextChar()) {
+				switch (c) {
 					case ',':
+						c = skipWhitespaces(parseContext);
 						break;
 					case '}': {
-						skipWhitespaces(parseContext);
 						std::unique_ptr<ObjectValue, ValueDeleter> object = std::move(currentFrame.prevObject);
 						parseContext.parseFrames.popBack();
 						parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(object.release());
@@ -403,11 +450,11 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t
 				[[fallthrough]];
 			}
 			case ParseState::StartParsingObject: {
-				skipWhitespaces(parseContext);
+				ParseFrame &currentFrame = parseContext.parseFrames.back();
 
 				peff::String key(parseContext.allocator.get());
 
-				if ((parseContext.nextChar()) != '"') {
+				if (c != '"') {
 					return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Expecting \""));
 				}
 
@@ -415,13 +462,13 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t
 					return e;
 				}
 
-				skipWhitespaces(parseContext);
+				c = skipWhitespaces(parseContext);
 
-				if ((parseContext.nextChar()) != ':') {
+				if (c != ':') {
 					return withOutOfMemoryErrorIfAllocFailed(SyntaxError::alloc(parseContext.allocator.get(), parseContext.i, "Expecting :"));
 				}
 
-				skipWhitespaces(parseContext);
+				c = skipWhitespaces(parseContext);
 
 				currentFrame.prevKey.moveFrom(std::move(key));
 				currentFrame.parseState = ParseState::ParsingObject;
@@ -433,24 +480,23 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t
 					return OutOfMemoryError::alloc();
 				}
 
-				continue;
+				goto reparseWithInitialChar;
 			}
 			case ParseState::ParsingArray: {
+				ParseFrame &currentFrame = parseContext.parseFrames.back();
+
 				if (!currentFrame.prevArray->data.pushBack(std::move(currentFrame.receivedValue))) {
 					return OutOfMemoryError::alloc();
 				}
 
-				skipWhitespaces(parseContext);
-
-				switch (parseContext.nextChar()) {
+				switch (c) {
 					case ',':
-						skipWhitespaces(parseContext);
+						c = skipWhitespaces(parseContext);
 						break;
 					case ']': {
 						std::unique_ptr<ArrayValue, ValueDeleter> object = std::move(currentFrame.prevArray);
 						parseContext.parseFrames.popBack();
 						parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(object.release());
-						skipWhitespaces(parseContext);
 						continue;
 					}
 					default:
@@ -460,7 +506,7 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t
 				[[fallthrough]];
 			}
 			case ParseState::StartParsingArray: {
-				skipWhitespaces(parseContext);
+				ParseFrame &currentFrame = parseContext.parseFrames.back();
 
 				currentFrame.parseState = ParseState::ParsingArray;
 
@@ -471,10 +517,10 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(const char *src, size_t
 					return OutOfMemoryError::alloc();
 				}
 
-				continue;
+				goto reparseWithInitialChar;
 			}
 		}
-	} while (parseContext.parseFrames.size() > 1);
+	}
 
 	valueOut = std::move(parseContext.parseFrames.back().receivedValue);
 
