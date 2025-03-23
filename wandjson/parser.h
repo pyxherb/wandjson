@@ -59,16 +59,20 @@ namespace wandjson {
 							// NOTE: Resizing the buffer without adjusting the capacity should always be true.
 							std::terminate();
 						}
+						i += size;
 						return size;
 					} else {
 						size_t szRead = intermediateBuffer.size();
 						memcpy(buffer, intermediateBuffer.data(), intermediateBuffer.size());
 						intermediateBuffer.clear();
 						szRead += reader->read(buffer + szRead, size - szRead);
+						i += szRead;
 						return szRead;
 					}
 				}
-				return reader->read(buffer, size);
+				size_t szRead = reader->read(buffer, size);
+				i += szRead;
+				return szRead;
 			}
 
 			WANDJSON_FORCEINLINE char nextChar() {
