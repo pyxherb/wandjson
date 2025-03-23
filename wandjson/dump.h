@@ -5,6 +5,10 @@
 #include "value.h"
 
 namespace wandjson {
+	class Writer {
+	public:
+		virtual void write();
+	};
 }
 
 #endif

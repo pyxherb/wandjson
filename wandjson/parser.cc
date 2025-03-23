@@ -12,10 +12,17 @@ WANDJSON_API StringReader::StringReader(const std::string_view &src) : src(src) 
 WANDJSON_API StringReader::~StringReader() {
 }
 
-WANDJSON_API char StringReader::nextChar() {
-	if (i >= src.size())
-		return '\0';
-	return src[i++];
+WANDJSON_API size_t StringReader::read(char *buffer, size_t size) {
+	if ((src.size() < size) || (src.size() - size < i)) {
+		size_t len = src.size() - i;
+		memcpy(buffer, src.data() + i, len);
+		i = src.size();
+		return len;
+	}
+
+	memcpy(buffer, src.data() + i, size);
+	i += size;
+	return size;
 }
 
 WANDJSON_API bool parser::isSpaceChar(char c) {
@@ -170,9 +177,7 @@ end:
 WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::Alloc *allocator, std::unique_ptr<Value, ValueDeleter> &valueOut) {
 	InternalExceptionPointer e;
 
-	ParseContext parseContext(allocator);
-
-	parseContext.reader = reader;
+	ParseContext parseContext(allocator, reader);
 
 	{
 		ParseFrame parseFrame;

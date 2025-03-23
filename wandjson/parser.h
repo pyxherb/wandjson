@@ -8,7 +8,7 @@ namespace wandjson {
 	class Reader {
 	public:
 		WANDJSON_API virtual ~Reader();
-		virtual char nextChar() = 0;
+		virtual size_t read(char *buffer, size_t size) = 0;
 	};
 
 	class StringReader : public Reader {
@@ -18,7 +18,7 @@ namespace wandjson {
 
 		WANDJSON_API StringReader(const std::string_view &src);
 		WANDJSON_API virtual ~StringReader();
-		WANDJSON_API virtual char nextChar() override;
+		WANDJSON_API virtual size_t read(char *buffer, size_t size) override;
 	};
 
 	namespace parser {
@@ -45,13 +45,27 @@ namespace wandjson {
 			Reader *reader;
 			peff::List<ParseFrame> parseFrames;
 			peff::RcObjectPtr<peff::Alloc> allocator;
+			peff::String intermediateBuffer;
 			size_t i = 0;
 
-			WANDJSON_FORCEINLINE ParseContext(peff::Alloc *allocator) : allocator(allocator), parseFrames(allocator) {}
+			WANDJSON_FORCEINLINE ParseContext(peff::Alloc *allocator, Reader *reader) : allocator(allocator), parseFrames(allocator), reader(reader), intermediateBuffer(allocator) {}
+
+			WANDJSON_FORCEINLINE size_t read(char *buffer, size_t size) {
+				return reader->read(buffer, size);
+			}
 
 			WANDJSON_FORCEINLINE char nextChar() {
+				char c;
+				if (intermediateBuffer.size()) {
+					c = intermediateBuffer.at(0);
+					intermediateBuffer.popFront();
+					++i;
+					return c;
+				}
+				if(!read(&c, 1))
+					return '\0';
 				++i;
-				return reader->nextChar();
+				return c;
 			}
 		};
 
