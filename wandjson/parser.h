@@ -51,6 +51,23 @@ namespace wandjson {
 			WANDJSON_FORCEINLINE ParseContext(peff::Alloc *allocator, Reader *reader) : allocator(allocator), parseFrames(allocator), reader(reader), intermediateBuffer(allocator) {}
 
 			WANDJSON_FORCEINLINE size_t read(char *buffer, size_t size) {
+				if (intermediateBuffer.size()) {
+					if (intermediateBuffer.size() > size) {
+						memcpy(buffer, intermediateBuffer.data(), size);
+						memcpy(intermediateBuffer.data(), intermediateBuffer.data() + size, intermediateBuffer.size() - size);
+						if (!intermediateBuffer.resize(size)) {
+							// NOTE: Resizing the buffer without adjusting the capacity should always be true.
+							std::terminate();
+						}
+						return size;
+					} else {
+						size_t szRead = intermediateBuffer.size();
+						memcpy(buffer, intermediateBuffer.data(), intermediateBuffer.size());
+						intermediateBuffer.clear();
+						szRead += reader->read(buffer + szRead, size - szRead);
+						return szRead;
+					}
+				}
 				return reader->read(buffer, size);
 			}
 
