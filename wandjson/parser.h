@@ -59,14 +59,14 @@ namespace wandjson {
 							// NOTE: Resizing the buffer without adjusting the capacity should always be true.
 							std::terminate();
 						}
-						i += size;
 						return size;
 					} else {
 						size_t szRead = intermediateBuffer.size();
 						memcpy(buffer, intermediateBuffer.data(), intermediateBuffer.size());
 						intermediateBuffer.clear();
-						szRead += reader->read(buffer + szRead, size - szRead);
-						i += szRead;
+						size_t szNewRead = reader->read(buffer + szRead, size - szRead);
+						i += szNewRead;
+						szRead += szNewRead;
 						return szRead;
 					}
 				}
@@ -85,7 +85,6 @@ namespace wandjson {
 				}
 				if(!read(&c, 1))
 					return '\0';
-				++i;
 				return c;
 			}
 		};
