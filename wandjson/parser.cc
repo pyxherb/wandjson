@@ -277,7 +277,9 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::A
 
 					parseNumberDigitsEnd:
 						if (c == '.') {
-							parseContext.nextChar();
+							if (!s.pushBack(+c)) {
+								return OutOfMemoryError::alloc();
+							}
 							isDecimal = true;
 						}
 
@@ -300,6 +302,9 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::A
 										break;
 									case 'e':
 									case 'E':
+										if (!s.pushBack(+c)) {
+											return OutOfMemoryError::alloc();
+										}
 										goto parseNumberDecimalDigitsEnd;
 									default:
 										goto parseNumberEnd;
@@ -357,11 +362,19 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::A
 					parseNumberEnd:
 						parseContext.parseFrames.popBack();
 						if (isDecimal) {
-							if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), strtod(s.data(), nullptr))))) {
-								return OutOfMemoryError::alloc();
+							double v = strtod(s.data(), nullptr);
+
+							if ((v == INFINITY) || (isnan(v))) {
+								if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NullValue::alloc(parseContext.allocator.get())))) {
+									return OutOfMemoryError::alloc();
+								}
+							} else {
+								if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), v)))) {
+									return OutOfMemoryError::alloc();
+								}
 							}
 						} else {
-							if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), strtoull(s.data(), nullptr, 10))))) {
+							if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), strtoll(s.data(), nullptr, 10))))) {
 								return OutOfMemoryError::alloc();
 							}
 						}

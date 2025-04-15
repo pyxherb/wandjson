@@ -5,7 +5,7 @@ using namespace wandjson;
 WANDJSON_API Value::Value(NodeType nodeType, peff::Alloc* allocator) : allocator(allocator), nodeType(nodeType) {
 }
 
-WANDJSON_API NumberValue::NumberValue(peff::Alloc *allocator, uint64_t data): Value(NodeType::Number, allocator), numberKind(NumberKind::Integer) {
+WANDJSON_API NumberValue::NumberValue(peff::Alloc *allocator, int64_t data): Value(NodeType::Number, allocator), numberKind(NumberKind::Integer) {
 	this->data.asInteger = data;
 }
 
@@ -20,7 +20,7 @@ WANDJSON_API void NumberValue::dealloc() noexcept {
 	peff::destroyAndRelease<NumberValue>(allocator.get(), this, sizeof(std::max_align_t));
 }
 
-WANDJSON_API NumberValue *NumberValue::alloc(peff::Alloc *allocator, uint64_t data) noexcept {
+WANDJSON_API NumberValue *NumberValue::alloc(peff::Alloc *allocator, int64_t data) noexcept {
 	return peff::allocAndConstruct<NumberValue>(allocator, sizeof(std::max_align_t), allocator, data);
 }
 

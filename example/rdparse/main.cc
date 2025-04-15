@@ -1,5 +1,17 @@
 #include <wandjson/parser.h>
+#include <wandjson/dump.h>
 #include <fstream>
+
+class ANSIWriter : public wandjson::Writer {
+public:
+	WANDJSON_API virtual ~ANSIWriter() {
+	}
+
+	virtual bool write(const char* src, size_t size) override {
+		fwrite(src, size, 1, stdout);
+		return true;
+	}
+};
 
 int main() {
 	std::ifstream is("test.json");
@@ -28,6 +40,14 @@ int main() {
 				break;
 			}
 		}
+	}
+
+	puts("Dumping:");
+
+	ANSIWriter writer;
+
+	if (!wandjson::dumpValue(peff::getDefaultAlloc(), &writer, v.get())) {
+		std::terminate();
 	}
 
 	return 0;

@@ -43,21 +43,21 @@ namespace wandjson {
 	class NumberValue final : public Value {
 	public:
 		union {
-			uint64_t asInteger;
+			int64_t asInteger;
 			double asDecimal;
 		} data;
 		NumberKind numberKind;
 
-		WANDJSON_API NumberValue(peff::Alloc *allocator, uint64_t data);
+		WANDJSON_API NumberValue(peff::Alloc *allocator, int64_t data);
 		WANDJSON_API NumberValue(peff::Alloc *allocator, double data);
 		WANDJSON_API virtual ~NumberValue();
 
 		WANDJSON_API virtual void dealloc() noexcept override;
 
-		WANDJSON_API static NumberValue *alloc(peff::Alloc *allocator, uint64_t data) noexcept;
+		WANDJSON_API static NumberValue *alloc(peff::Alloc *allocator, int64_t data) noexcept;
 		WANDJSON_API static NumberValue *alloc(peff::Alloc *allocator, double data) noexcept;
 
-		WANDJSON_FORCEINLINE uint64_t getInteger() const {
+		WANDJSON_FORCEINLINE int64_t getInteger() const {
 			return data.asInteger;
 		}
 

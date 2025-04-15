@@ -33,12 +33,12 @@ WANDJSON_API void SyntaxError::dealloc() {
 }
 
 WANDJSON_API SyntaxError *SyntaxError::alloc(peff::Alloc *allocator, size_t off, const char *message) noexcept {
-	void *buf = allocator->alloc(sizeof(SyntaxError));
+	void *buf = allocator->alloc(sizeof(SyntaxError), sizeof(std::max_align_t));
 
 	if (!buf)
 		return nullptr;
 
-	new (buf) SyntaxError(allocator, off, message);
+	peff::constructAt<SyntaxError>((SyntaxError *)buf, allocator, off, message);
 
 	return (SyntaxError *)buf;
 }
