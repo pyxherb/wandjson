@@ -14,6 +14,10 @@ public:
 };
 
 int main() {
+#ifdef _MSC_VER
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
 	std::ifstream is("test.json");
 
 	is.seekg(0, std::ios::end);

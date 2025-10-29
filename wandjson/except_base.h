@@ -65,7 +65,7 @@ namespace wandjson {
 
 		WANDJSON_FORCEINLINE void unwrap() noexcept {
 			if (_ptr) {
-				assert(("Unhandled WandXML internal exception: ", false));
+				assert(("Unhandled WandJSON exception: ", false));
 			}
 		}
 

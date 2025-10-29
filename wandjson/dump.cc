@@ -144,7 +144,7 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 
 				DumpingArrayDumpFrameData &data = std::get<DumpingArrayDumpFrameData>(curFrame.data);
 
-				DumpFrame frame = { DumpState::None, v->data.at(data.prevIndex).get() };
+				DumpFrame frame = { DumpState::None, v->data.at(data.prevIndex) };
 
 				if (!dumpContext.frames.pushBack(std::move(frame))) {
 					return false;
@@ -178,7 +178,7 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 
 				WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write(":", 1));
 
-				DumpFrame frame = { DumpState::None, data.prevIterator.value().get() };
+				DumpFrame frame = { DumpState::None, data.prevIterator.value() };
 
 				if (!dumpContext.frames.pushBack(std::move(frame))) {
 					return false;

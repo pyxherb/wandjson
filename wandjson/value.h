@@ -17,14 +17,25 @@ namespace wandjson {
 		Null
 	};
 
+	class Value;
+
+	struct ValueDestructionInfo {
+		Value *destructibleValueList = nullptr;
+
+		WANDJSON_API void pushDestructible(Value *astNode);
+	};
+
 	class Value {
 	public:
 		peff::RcObjectPtr<peff::Alloc> allocator;
 		NodeType nodeType;
+		ValueDestructionInfo *destructionInfo = nullptr;
+		Value *nextDestructible = nullptr;
 
 		WANDJSON_API Value(NodeType nodeType, peff::Alloc *allocator);
 
-		virtual void dealloc() = 0;
+		WANDJSON_API void dealloc();
+		virtual void dealloc(ValueDestructionInfo &destructionInfo) = 0;
 	};
 
 	struct ValueDeleter {
@@ -34,7 +45,6 @@ namespace wandjson {
 			}
 		}
 	};
-
 	enum class NumberKind : uint8_t {
 		Integer = 0,
 		Decimal
@@ -52,7 +62,7 @@ namespace wandjson {
 		WANDJSON_API NumberValue(peff::Alloc *allocator, double data);
 		WANDJSON_API virtual ~NumberValue();
 
-		WANDJSON_API virtual void dealloc() noexcept override;
+		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
 
 		WANDJSON_API static NumberValue *alloc(peff::Alloc *allocator, int64_t data) noexcept;
 		WANDJSON_API static NumberValue *alloc(peff::Alloc *allocator, double data) noexcept;
@@ -73,31 +83,31 @@ namespace wandjson {
 		WANDJSON_API StringValue(peff::Alloc *allocator, peff::String &&data);
 		WANDJSON_API virtual ~StringValue();
 
-		WANDJSON_API virtual void dealloc() noexcept override;
+		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
 
 		WANDJSON_API static StringValue *alloc(peff::Alloc *allocator, peff::String &&data) noexcept;
 	};
 
 	class ArrayValue final : public Value {
 	public:
-		peff::DynArray<std::unique_ptr<Value, ValueDeleter>> data;
+		peff::DynArray<Value *> data;
 
 		WANDJSON_API ArrayValue(peff::Alloc *allocator);
 		WANDJSON_API virtual ~ArrayValue();
 
-		WANDJSON_API virtual void dealloc() noexcept override;
+		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
 
 		WANDJSON_API static ArrayValue *alloc(peff::Alloc *allocator) noexcept;
 	};
 
 	class ObjectValue final : public Value {
 	public:
-		peff::HashMap<peff::String, std::unique_ptr<Value, ValueDeleter>> data;
+		peff::HashMap<peff::String, Value *> data;
 
 		WANDJSON_API ObjectValue(peff::Alloc *allocator);
 		WANDJSON_API virtual ~ObjectValue();
 
-		WANDJSON_API virtual void dealloc() noexcept override;
+		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
 
 		WANDJSON_API static ObjectValue *alloc(peff::Alloc *allocator) noexcept;
 	};
@@ -109,7 +119,7 @@ namespace wandjson {
 		WANDJSON_API BooleanValue(peff::Alloc *allocator, bool data);
 		WANDJSON_API virtual ~BooleanValue();
 
-		WANDJSON_API virtual void dealloc() noexcept override;
+		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
 
 		WANDJSON_API static BooleanValue *alloc(peff::Alloc *allocator, bool data) noexcept;
 	};
@@ -119,7 +129,7 @@ namespace wandjson {
 		WANDJSON_API NullValue(peff::Alloc *allocator);
 		WANDJSON_API virtual ~NullValue();
 
-		WANDJSON_API virtual void dealloc() noexcept override;
+		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
 
 		WANDJSON_API static NullValue *alloc(peff::Alloc *allocator) noexcept;
 	};
