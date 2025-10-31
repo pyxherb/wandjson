@@ -4,7 +4,7 @@ file(GLOB HEADERS *.h)
 file(GLOB SRC *.cc)
 
 add_library(wandjson SHARED)
-target_compile_definitions(wandjson PRIVATE IS_WANDJSON_BASE_BUILDING=1)
+target_compile_definitions(wandjson PRIVATE WANDJSON_DYNAMIC_LINK=1 IS_WANDJSON_BASE_BUILDING=1)
 set_target_properties(wandjson PROPERTIES CXX_STANDARD 17)
 target_sources(wandjson PRIVATE ${HEADERS} ${SRC})
 target_include_directories(wandjson PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/> $<INSTALL_INTERFACE:include/>)
@@ -32,5 +32,5 @@ install(TARGETS wandjson wandjson_static
     LIBRARY DESTINATION lib/
     ARCHIVE DESTINATION lib/
     RUNTIME DESTINATION bin
-    PUBLIC_HEADER DESTINATION include/peff/base/
+    PUBLIC_HEADER DESTINATION include/wandjson/
 )
