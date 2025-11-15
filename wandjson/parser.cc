@@ -447,7 +447,7 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::A
 			case ParseState::ParsingObject: {
 				ParseFrame &currentFrame = parseContext.parseFrames.back();
 
-				if (!currentFrame.prevObject->data.insert(currentFrame.prevKey.release(), currentFrame.receivedValue.release())) {
+				if (!currentFrame.prevObject->insert(currentFrame.prevKey.release(), currentFrame.receivedValue.release())) {
 					return OutOfMemoryError::alloc();
 				}
 
@@ -503,7 +503,7 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::A
 			case ParseState::ParsingArray: {
 				ParseFrame &currentFrame = parseContext.parseFrames.back();
 
-				if (!currentFrame.prevArray->data.pushBack(currentFrame.receivedValue.release())) {
+				if (!currentFrame.prevArray->data().pushBack(currentFrame.receivedValue.release())) {
 					return OutOfMemoryError::alloc();
 				}
 

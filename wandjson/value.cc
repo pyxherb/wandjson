@@ -7,7 +7,7 @@ WANDJSON_API void ValueDestructionInfo::pushDestructible(Value *astNode) {
 	destructibleValueList = astNode;
 }
 
-WANDJSON_API Value::Value(NodeType nodeType, peff::Alloc* allocator) : allocator(allocator), nodeType(nodeType) {
+WANDJSON_API Value::Value(NodeType nodeType, peff::Alloc *allocator) : allocator(allocator), nodeType(nodeType) {
 }
 
 WANDJSON_API void Value::dealloc() {
@@ -29,12 +29,12 @@ WANDJSON_API void Value::dealloc() {
 	}
 }
 
-WANDJSON_API NumberValue::NumberValue(peff::Alloc *allocator, int64_t data): Value(NodeType::Number, allocator), numberKind(NumberKind::Integer) {
-	this->data.asInteger = data;
+WANDJSON_API NumberValue::NumberValue(peff::Alloc *allocator, int64_t data) : Value(NodeType::Number, allocator), _numberKind(NumberKind::Integer) {
+	this->_data.asInteger = data;
 }
 
-WANDJSON_API NumberValue::NumberValue(peff::Alloc *allocator, double data) : Value(NodeType::Number, allocator), numberKind(NumberKind::Decimal) {
-	this->data.asDecimal = data;
+WANDJSON_API NumberValue::NumberValue(peff::Alloc *allocator, double data) : Value(NodeType::Number, allocator), _numberKind(NumberKind::Decimal) {
+	this->_data.asDecimal = data;
 }
 
 WANDJSON_API NumberValue::~NumberValue() {
@@ -52,7 +52,7 @@ WANDJSON_API NumberValue *NumberValue::alloc(peff::Alloc *allocator, double data
 	return peff::allocAndConstruct<NumberValue>(allocator, sizeof(std::max_align_t), allocator, data);
 }
 
-WANDJSON_API StringValue::StringValue(peff::Alloc *allocator, peff::String &&data) : Value(NodeType::String, allocator), data(std::move(data)) {
+WANDJSON_API StringValue::StringValue(peff::Alloc *allocator, peff::String &&data) : Value(NodeType::String, allocator), _data(std::move(data)) {
 }
 
 WANDJSON_API StringValue::~StringValue() {
@@ -66,11 +66,11 @@ WANDJSON_API StringValue *StringValue::alloc(peff::Alloc *allocator, peff::Strin
 	return peff::allocAndConstruct<StringValue>(allocator, sizeof(std::max_align_t), allocator, std::move(data));
 }
 
-WANDJSON_API ArrayValue::ArrayValue(peff::Alloc *allocator) : Value(NodeType::Array, allocator), data(allocator) {
+WANDJSON_API ArrayValue::ArrayValue(peff::Alloc *allocator) : Value(NodeType::Array, allocator), _data(allocator) {
 }
 
 WANDJSON_API ArrayValue::~ArrayValue() {
-	for (auto i : this->data) {
+	for (auto i : this->_data) {
 		this->destructionInfo->pushDestructible(i);
 	}
 }
@@ -85,13 +85,36 @@ WANDJSON_API ArrayValue *ArrayValue::alloc(peff::Alloc *allocator) noexcept {
 	return peff::allocAndConstruct<ArrayValue>(allocator, sizeof(std::max_align_t), allocator);
 }
 
-WANDJSON_API ObjectValue::ObjectValue(peff::Alloc *allocator) : Value(NodeType::Object, allocator), data(allocator) {
+WANDJSON_API ObjectFieldWrapper::ObjectFieldWrapper(ObjectFieldWrapper &&rhs) : parent(rhs.parent), name(rhs.name), value(rhs.value){
+	rhs.parent = nullptr;
+	rhs.name = nullptr;
+	rhs.value = nullptr;
+}
+
+WANDJSON_API ObjectFieldWrapper &ObjectFieldWrapper::operator = (ObjectFieldWrapper &&rhs) {
+	parent = rhs.parent;
+	name = rhs.name;
+	value = rhs.value;
+	rhs.parent = nullptr;
+	rhs.name = nullptr;
+	rhs.value = nullptr;
+	return *this;
+}
+
+WANDJSON_API ObjectFieldWrapper::~ObjectFieldWrapper() {
+	if (name)
+		peff::destroyAndRelease<peff::String>(parent->allocator.get(), name, alignof(peff::String));
+
+	if (value)
+		parent->destructionInfo->pushDestructible(value);
+}
+
+WANDJSON_API ObjectValue::ObjectValue(peff::Alloc *allocator) : Value(NodeType::Object, allocator), _data(allocator) {
 }
 
 WANDJSON_API ObjectValue::~ObjectValue() {
-	for (auto i : this->data) {
-		this->destructionInfo->pushDestructible(i.second);
-	}
+	// All destructibles are pushed by the wrapper destructor.
+	_data.clear();
 }
 
 WANDJSON_API void ObjectValue::dealloc(ValueDestructionInfo &destructionInfo) noexcept {
@@ -104,7 +127,7 @@ WANDJSON_API ObjectValue *ObjectValue::alloc(peff::Alloc *allocator) noexcept {
 	return peff::allocAndConstruct<ObjectValue>(allocator, sizeof(std::max_align_t), allocator);
 }
 
-WANDJSON_API BooleanValue::BooleanValue(peff::Alloc *allocator, bool data) : Value(NodeType::Boolean, allocator), data(std::move(data)) {
+WANDJSON_API BooleanValue::BooleanValue(peff::Alloc *allocator, bool data) : Value(NodeType::Boolean, allocator), _data(std::move(data)) {
 }
 
 WANDJSON_API BooleanValue::~BooleanValue() {

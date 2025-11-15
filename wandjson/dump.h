@@ -22,7 +22,7 @@ namespace wandjson {
 	};
 
 	struct DumpingObjectDumpFrameData {
-		decltype(std::declval<ObjectValue>().data)::ConstIterator prevIterator;
+		ObjectValue::ConstIterator prevIterator;
 	};
 
 	struct DumpingArrayDumpFrameData {

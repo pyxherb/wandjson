@@ -79,7 +79,7 @@ namespace wandjson {
 				char c;
 				if (intermediateBuffer.size()) {
 					c = intermediateBuffer.at(0);
-					intermediateBuffer.popFront();
+					intermediateBuffer.popFrontWithoutShrink();
 					++i;
 					return c;
 				}
