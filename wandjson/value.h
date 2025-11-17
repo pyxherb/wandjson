@@ -221,6 +221,10 @@ namespace wandjson {
 		}
 
 		Value *at(const std::string_view &name) const {
+			return _data.at(name).value;
+		}
+
+		Value *find(const std::string_view &name) const {
 			if (auto it = _data.find(name); it != _data.end())
 				return it.value().value;
 			return nullptr;
