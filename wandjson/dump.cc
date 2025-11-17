@@ -53,8 +53,8 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 
 		switch (curFrame.state) {
 			case DumpState::None: {
-				switch (curFrame.value->nodeType) {
-					case NodeType::Number: {
+				switch (curFrame.value->getValueType()) {
+					case ValueType::Number: {
 						NumberValue *v = (NumberValue *)curFrame.value;
 
 						switch (v->getNumberKind()) {
@@ -83,7 +83,7 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 						}
 						break;
 					}
-					case NodeType::Array: {
+					case ValueType::Array: {
 						BooleanValue *v = (BooleanValue *)curFrame.value;
 
 						curFrame.state = DumpState::DumpingArray;
@@ -98,7 +98,7 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 
 						continue;
 					}
-					case NodeType::Object: {
+					case ValueType::Object: {
 						ObjectValue *v = (ObjectValue *)curFrame.value;
 
 						curFrame.state = DumpState::DumpingObject;
@@ -113,7 +113,7 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 
 						continue;
 					}
-					case NodeType::Boolean: {
+					case ValueType::Boolean: {
 						BooleanValue *v = (BooleanValue *)curFrame.value;
 						if (v->data()) {
 							WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("true", sizeof("true") - 1));
@@ -122,10 +122,10 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 						}
 						break;
 					}
-					case NodeType::Null:
+					case ValueType::Null:
 						WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("null", sizeof("null") - 1));
 						break;
-					case NodeType::String: {
+					case ValueType::String: {
 						const StringValue *v = (StringValue *)curFrame.value;
 
 						WANDJSON_RETURN_IF_FALSE(_dumpString(dumpContext, v->data()));

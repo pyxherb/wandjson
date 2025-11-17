@@ -7,7 +7,7 @@ WANDJSON_API void ValueDestructionInfo::pushDestructible(Value *astNode) {
 	destructibleValueList = astNode;
 }
 
-WANDJSON_API Value::Value(NodeType nodeType, peff::Alloc *allocator) : allocator(allocator), nodeType(nodeType) {
+WANDJSON_API Value::Value(ValueType valueType, peff::Alloc *allocator) : _allocator(allocator), _valueType(valueType) {
 }
 
 WANDJSON_API void Value::dealloc() {
@@ -29,11 +29,11 @@ WANDJSON_API void Value::dealloc() {
 	}
 }
 
-WANDJSON_API NumberValue::NumberValue(peff::Alloc *allocator, int64_t data) : Value(NodeType::Number, allocator), _numberKind(NumberKind::Integer) {
+WANDJSON_API NumberValue::NumberValue(peff::Alloc *allocator, int64_t data) : Value(ValueType::Number, allocator), _numberKind(NumberKind::Integer) {
 	this->_data.asInteger = data;
 }
 
-WANDJSON_API NumberValue::NumberValue(peff::Alloc *allocator, double data) : Value(NodeType::Number, allocator), _numberKind(NumberKind::Decimal) {
+WANDJSON_API NumberValue::NumberValue(peff::Alloc *allocator, double data) : Value(ValueType::Number, allocator), _numberKind(NumberKind::Decimal) {
 	this->_data.asDecimal = data;
 }
 
@@ -41,7 +41,7 @@ WANDJSON_API NumberValue::~NumberValue() {
 }
 
 WANDJSON_API void NumberValue::dealloc(ValueDestructionInfo &destructionInfo) noexcept {
-	peff::destroyAndRelease<NumberValue>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<NumberValue>(getAllocator(), this, sizeof(std::max_align_t));
 }
 
 WANDJSON_API NumberValue *NumberValue::alloc(peff::Alloc *allocator, int64_t data) noexcept {
@@ -52,21 +52,21 @@ WANDJSON_API NumberValue *NumberValue::alloc(peff::Alloc *allocator, double data
 	return peff::allocAndConstruct<NumberValue>(allocator, sizeof(std::max_align_t), allocator, data);
 }
 
-WANDJSON_API StringValue::StringValue(peff::Alloc *allocator, peff::String &&data) : Value(NodeType::String, allocator), _data(std::move(data)) {
+WANDJSON_API StringValue::StringValue(peff::Alloc *allocator, peff::String &&data) : Value(ValueType::String, allocator), _data(std::move(data)) {
 }
 
 WANDJSON_API StringValue::~StringValue() {
 }
 
 WANDJSON_API void StringValue::dealloc(ValueDestructionInfo &destructionInfo) noexcept {
-	peff::destroyAndRelease<StringValue>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<StringValue>(getAllocator(), this, sizeof(std::max_align_t));
 }
 
 WANDJSON_API StringValue *StringValue::alloc(peff::Alloc *allocator, peff::String &&data) noexcept {
 	return peff::allocAndConstruct<StringValue>(allocator, sizeof(std::max_align_t), allocator, std::move(data));
 }
 
-WANDJSON_API ArrayValue::ArrayValue(peff::Alloc *allocator) : Value(NodeType::Array, allocator), _data(allocator) {
+WANDJSON_API ArrayValue::ArrayValue(peff::Alloc *allocator) : Value(ValueType::Array, allocator), _data(allocator) {
 }
 
 WANDJSON_API ArrayValue::~ArrayValue() {
@@ -78,7 +78,7 @@ WANDJSON_API ArrayValue::~ArrayValue() {
 WANDJSON_API void ArrayValue::dealloc(ValueDestructionInfo &destructionInfo) noexcept {
 	this->destructionInfo = &destructionInfo;
 
-	peff::destroyAndRelease<ArrayValue>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<ArrayValue>(getAllocator(), this, sizeof(std::max_align_t));
 }
 
 WANDJSON_API ArrayValue *ArrayValue::alloc(peff::Alloc *allocator) noexcept {
@@ -103,13 +103,13 @@ WANDJSON_API ObjectFieldWrapper &ObjectFieldWrapper::operator = (ObjectFieldWrap
 
 WANDJSON_API ObjectFieldWrapper::~ObjectFieldWrapper() {
 	if (name)
-		peff::destroyAndRelease<peff::String>(parent->allocator.get(), name, alignof(peff::String));
+		peff::destroyAndRelease<peff::String>(parent->getAllocator(), name, alignof(peff::String));
 
 	if (value)
 		parent->destructionInfo->pushDestructible(value);
 }
 
-WANDJSON_API ObjectValue::ObjectValue(peff::Alloc *allocator) : Value(NodeType::Object, allocator), _data(allocator) {
+WANDJSON_API ObjectValue::ObjectValue(peff::Alloc *allocator) : Value(ValueType::Object, allocator), _data(allocator) {
 }
 
 WANDJSON_API ObjectValue::~ObjectValue() {
@@ -120,35 +120,35 @@ WANDJSON_API ObjectValue::~ObjectValue() {
 WANDJSON_API void ObjectValue::dealloc(ValueDestructionInfo &destructionInfo) noexcept {
 	this->destructionInfo = &destructionInfo;
 
-	peff::destroyAndRelease<ObjectValue>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<ObjectValue>(getAllocator(), this, sizeof(std::max_align_t));
 }
 
 WANDJSON_API ObjectValue *ObjectValue::alloc(peff::Alloc *allocator) noexcept {
 	return peff::allocAndConstruct<ObjectValue>(allocator, sizeof(std::max_align_t), allocator);
 }
 
-WANDJSON_API BooleanValue::BooleanValue(peff::Alloc *allocator, bool data) : Value(NodeType::Boolean, allocator), _data(std::move(data)) {
+WANDJSON_API BooleanValue::BooleanValue(peff::Alloc *allocator, bool data) : Value(ValueType::Boolean, allocator), _data(std::move(data)) {
 }
 
 WANDJSON_API BooleanValue::~BooleanValue() {
 }
 
 WANDJSON_API void BooleanValue::dealloc(ValueDestructionInfo &destructionInfo) noexcept {
-	peff::destroyAndRelease<BooleanValue>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<BooleanValue>(getAllocator(), this, sizeof(std::max_align_t));
 }
 
 WANDJSON_API BooleanValue *BooleanValue::alloc(peff::Alloc *allocator, bool data) noexcept {
 	return peff::allocAndConstruct<BooleanValue>(allocator, sizeof(std::max_align_t), allocator, data);
 }
 
-WANDJSON_API NullValue::NullValue(peff::Alloc *allocator) : Value(NodeType::Null, allocator) {
+WANDJSON_API NullValue::NullValue(peff::Alloc *allocator) : Value(ValueType::Null, allocator) {
 }
 
 WANDJSON_API NullValue::~NullValue() {
 }
 
 WANDJSON_API void NullValue::dealloc(ValueDestructionInfo &destructionInfo) noexcept {
-	peff::destroyAndRelease<NullValue>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<NullValue>(getAllocator(), this, sizeof(std::max_align_t));
 }
 
 WANDJSON_API NullValue *NullValue::alloc(peff::Alloc *allocator) noexcept {

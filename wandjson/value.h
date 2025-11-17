@@ -8,7 +8,7 @@
 #include <optional>
 
 namespace wandjson {
-	enum class NodeType : uint8_t {
+	enum class ValueType : uint8_t {
 		Number,
 		String,
 		Array,
@@ -25,17 +25,33 @@ namespace wandjson {
 		WANDJSON_API void pushDestructible(Value *astNode);
 	};
 
+	struct ObjectFieldWrapper;
+
 	class Value {
-	public:
-		peff::RcObjectPtr<peff::Alloc> allocator;
-		NodeType nodeType;
+	private:
+		ValueType _valueType;
+		peff::RcObjectPtr<peff::Alloc> _allocator;
+
+	protected:
 		ValueDestructionInfo *destructionInfo = nullptr;
 		Value *nextDestructible = nullptr;
 
-		WANDJSON_API Value(NodeType nodeType, peff::Alloc *allocator);
+		friend struct ObjectFieldWrapper;
+		friend struct ValueDestructionInfo;
+
+	public:
+		WANDJSON_API Value(ValueType nodeType, peff::Alloc *allocator);
 
 		WANDJSON_API void dealloc();
 		virtual void dealloc(ValueDestructionInfo &destructionInfo) = 0;
+
+		WANDJSON_FORCEINLINE ValueType getValueType() const noexcept {
+			return _valueType;
+		}
+
+		WANDJSON_FORCEINLINE peff::Alloc *getAllocator() const noexcept {
+			return _allocator.get();
+		}
 	};
 
 	struct ValueDeleter {
@@ -189,7 +205,7 @@ namespace wandjson {
 		WANDJSON_API static ObjectValue *alloc(peff::Alloc *allocator) noexcept;
 
 		[[nodiscard]] WANDJSON_FORCEINLINE bool insert(peff::String &&name, Value *value) {
-			peff::String *s = peff::allocAndConstruct<peff::String>(allocator.get(), alignof(peff::String), std::move(name));
+			peff::String *s = peff::allocAndConstruct<peff::String>(getAllocator(), alignof(peff::String), std::move(name));
 			if (!s)
 				return false;
 			if (!_data.insert(*s, ObjectFieldWrapper(this, s, nullptr)))
@@ -204,7 +220,7 @@ namespace wandjson {
 			return true;
 		}
 
-		Value* at(const std::string_view& name) const {
+		Value *at(const std::string_view &name) const {
 			if (auto it = _data.find(name); it != _data.end())
 				return it.value().value;
 			return nullptr;
