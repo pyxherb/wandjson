@@ -220,33 +220,140 @@ namespace wandjson {
 			return true;
 		}
 
-		Value *at(const std::string_view &name) const {
+		WANDJSON_FORCEINLINE Value *at(const std::string_view &name) const {
 			return _data.at(name).value;
 		}
 
-		Value *find(const std::string_view &name) const {
+		WANDJSON_FORCEINLINE Value *find(const std::string_view &name) const {
 			if (auto it = _data.find(name); it != _data.end())
 				return it.value().value;
 			return nullptr;
 		}
 
-		using Iterator = decltype(_data)::Iterator;
-		using ConstIterator = decltype(_data)::ConstIterator;
+		struct Iterator {
+			decltype(_data)::Iterator _iterator;
+
+			WANDJSON_FORCEINLINE Iterator(const decltype(_data)::Iterator &iterator) : _iterator(iterator) {}
+			WANDJSON_FORCEINLINE Iterator(decltype(_data)::Iterator &&iterator) : _iterator(std::move(iterator)) {}
+
+			WANDJSON_FORCEINLINE Iterator(const Iterator &) = default;
+			WANDJSON_FORCEINLINE Iterator(Iterator &&) = default;
+			WANDJSON_FORCEINLINE Iterator &operator=(const Iterator &) = default;
+			WANDJSON_FORCEINLINE Iterator &operator=(Iterator &&) = default;
+
+			WANDJSON_FORCEINLINE std::string_view key() const {
+				return _iterator.key();
+			}
+
+			WANDJSON_FORCEINLINE Value *value() const {
+				return _iterator.value().value;
+			}
+
+			PEFF_FORCEINLINE std::pair<std::string_view, Value *> operator*() const {
+				return { key(), value() };
+			}
+
+			PEFF_FORCEINLINE bool operator==(const Iterator &rhs) const {
+				return _iterator == rhs._iterator;
+			}
+
+			PEFF_FORCEINLINE bool operator==(Iterator &&rhs) const {
+				return _iterator == rhs._iterator;
+			}
+
+			PEFF_FORCEINLINE bool operator!=(const Iterator &rhs) const {
+				return _iterator != rhs._iterator;
+			}
+
+			PEFF_FORCEINLINE bool operator!=(Iterator &&rhs) const {
+				return _iterator != rhs._iterator;
+			}
+
+			PEFF_FORCEINLINE Iterator &operator++() {
+				++_iterator;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE Iterator operator++(int) {
+				Iterator it = *this;
+				++*this;
+				return it;
+			}
+		};
+
+		struct ConstIterator {
+			decltype(_data)::ConstIterator _iterator;
+
+			WANDJSON_FORCEINLINE ConstIterator(const decltype(_data)::ConstIterator &iterator) : _iterator(iterator) {}
+			WANDJSON_FORCEINLINE ConstIterator(decltype(_data)::ConstIterator &&iterator) : _iterator(std::move(iterator)) {}
+
+			WANDJSON_FORCEINLINE ConstIterator(const ConstIterator &) = default;
+			WANDJSON_FORCEINLINE ConstIterator(ConstIterator &&) = default;
+			WANDJSON_FORCEINLINE ConstIterator &operator=(const ConstIterator &) = default;
+			WANDJSON_FORCEINLINE ConstIterator &operator=(ConstIterator &&) = default;
+
+			WANDJSON_FORCEINLINE std::string_view key() const {
+				return _iterator.key();
+			}
+
+			WANDJSON_FORCEINLINE Value *value() const {
+				return _iterator.value().value;
+			}
+
+			PEFF_FORCEINLINE std::pair<std::string_view, Value *> operator*() const {
+				return { key(), value() };
+			}
+
+			PEFF_FORCEINLINE bool operator==(const ConstIterator &rhs) const {
+				return _iterator == rhs._iterator;
+			}
+
+			PEFF_FORCEINLINE bool operator==(ConstIterator &&rhs) const {
+				return _iterator == rhs._iterator;
+			}
+
+			PEFF_FORCEINLINE bool operator!=(const ConstIterator &rhs) const {
+				return _iterator != rhs._iterator;
+			}
+
+			PEFF_FORCEINLINE bool operator!=(ConstIterator &&rhs) const {
+				return _iterator != rhs._iterator;
+			}
+
+			PEFF_FORCEINLINE ConstIterator &operator++() {
+				++_iterator;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE ConstIterator operator++(int) {
+				ConstIterator it = *this;
+				++*this;
+				return it;
+			}
+		};
 
 		WANDJSON_FORCEINLINE Iterator begin() {
-			return _data.begin();
+			return Iterator(_data.begin());
 		}
 
 		WANDJSON_FORCEINLINE ConstIterator begin() const {
-			return _data.begin();
+			return ConstIterator(_data.begin());
+		}
+
+		WANDJSON_FORCEINLINE ConstIterator beginConst() const {
+			return ConstIterator(_data.begin());
 		}
 
 		WANDJSON_FORCEINLINE Iterator end() {
-			return _data.end();
+			return Iterator(_data.end());
 		}
 
 		WANDJSON_FORCEINLINE ConstIterator end() const {
-			return _data.end();
+			return ConstIterator(_data.end());
+		}
+
+		WANDJSON_FORCEINLINE ConstIterator endConst() const {
+			return ConstIterator(_data.end());
 		}
 	};
 

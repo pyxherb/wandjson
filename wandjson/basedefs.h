@@ -3,19 +3,8 @@
 
 #include <peff/base/basedefs.h>
 
-#if WANDJSON_DYNAMIC_LINK
-	#if defined(_MSC_VER)
-		#define WANDJSON_DLLEXPORT __declspec(dllexport)
-		#define WANDJSON_DLLIMPORT __declspec(dllimport)
-	#elif defined(__GNUC__) || defined(__clang__)
-		#define WANDJSON_DLLEXPORT __attribute__((__visibility__("default")))
-		#define WANDJSON_DLLIMPORT __attribute__((__visibility__("default")))
-	#endif
-#else
-	#define WANDJSON_DLLEXPORT
-	#define WANDJSON_DLLIMPORT
-#endif
-
+#define WANDJSON_DLLEXPORT PEFF_DLLEXPORT
+#define WANDJSON_DLLIMPORT PEFF_DLLIMPORT
 #define WANDJSON_FORCEINLINE PEFF_FORCEINLINE
 
 #if defined(_MSC_VER)

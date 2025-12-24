@@ -174,7 +174,7 @@ end:
 	return {};
 }
 
-WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::Alloc *allocator, std::unique_ptr<Value, ValueDeleter> &valueOut) {
+WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::Alloc *allocator, Value *&valueOut) {
 	InternalExceptionPointer e;
 
 	ParseContext parseContext(allocator, reader);
@@ -540,7 +540,7 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::A
 		}
 	}
 
-	valueOut = std::move(parseContext.parseFrames.back().receivedValue);
+	valueOut = parseContext.parseFrames.back().receivedValue.release();
 
 	return {};
 }

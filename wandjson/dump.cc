@@ -104,7 +104,7 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 						curFrame.state = DumpState::DumpingObject;
 
 						DumpingObjectDumpFrameData data = {
-							v->begin()
+							v->beginConst()
 						};
 
 						curFrame.data = std::move(data);
@@ -178,7 +178,7 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 
 				WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write(":", 1));
 
-				DumpFrame frame = { DumpState::None, data.prevIterator.value().value };
+				DumpFrame frame = { DumpState::None, data.prevIterator.value() };
 
 				if (!dumpContext.frames.pushBack(std::move(frame))) {
 					return false;
@@ -193,7 +193,7 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 
 				DumpingObjectDumpFrameData &data = std::get<DumpingObjectDumpFrameData>(curFrame.data);
 
-				if (++data.prevIterator == v->end()) {
+				if (++data.prevIterator == v->endConst()) {
 					WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("}", 1));
 					dumpContext.frames.popBack();
 				} else {

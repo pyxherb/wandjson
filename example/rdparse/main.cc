@@ -1,5 +1,6 @@
 #include <wandjson/parser.h>
 #include <wandjson/dump.h>
+#include <peff/advutils/unique_ptr.h>
 #include <fstream>
 
 class ANSIWriter : public wandjson::Writer {
@@ -27,12 +28,12 @@ int main() {
 	std::unique_ptr<char[]> testXml(std::make_unique<char[]>(size));
 	is.read(testXml.get(), size);
 
-	std::unique_ptr<wandjson::Value, wandjson::ValueDeleter> v;
+	peff::UniquePtr<wandjson::Value, wandjson::ValueDeleter> v;
 
 	std::string_view sv(testXml.get(), size);
 	wandjson::StringReader sr(sv);
 
-	wandjson::InternalExceptionPointer e = wandjson::parser::parseValue(&sr, peff::getDefaultAlloc(), v);
+	wandjson::InternalExceptionPointer e = wandjson::parser::parseValue(&sr, peff::getDefaultAlloc(), v.getRef());
 
 	if (e) {
 		switch (e->kind) {

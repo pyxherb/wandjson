@@ -93,8 +93,7 @@ namespace wandjson {
 		WANDJSON_API [[nodiscard]] char skipWhitespaces(ParseContext &parseContext);
 		WANDJSON_API InternalExceptionPointer parseStringEscape(ParseContext &parseContext, peff::String &stringOut);
 		WANDJSON_API InternalExceptionPointer parseString(ParseContext &parseContext, peff::String &stringOut);
-		WANDJSON_API InternalExceptionPointer parseObject(ParseContext &parseContext, std::unique_ptr<ObjectValue, ValueDeleter> &valueOut);
-		WANDJSON_API InternalExceptionPointer parseValue(Reader *reader, peff::Alloc *allocator, std::unique_ptr<Value, ValueDeleter> &valueOut);
+		WANDJSON_API InternalExceptionPointer parseValue(Reader *reader, peff::Alloc *allocator, Value *&valueOut);
 	}
 }
 
