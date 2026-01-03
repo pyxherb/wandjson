@@ -3,7 +3,9 @@
 using namespace wandjson;
 
 #define WANDJSON_RETURN_IF_FALSE(e) \
-	if (!(e)) return false;
+	if (!(e))                       \
+		return false;               \
+	else
 
 WANDJSON_API Writer::~Writer() {
 }
@@ -53,88 +55,88 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 
 		switch (curFrame.state) {
 			case DumpState::None: {
-				switch (curFrame.value->getValueType()) {
-					case ValueType::Number: {
-						NumberValue *v = (NumberValue *)curFrame.value;
+				if (!curFrame.value)
+					WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("null", sizeof("null") - 1));
+				else
+					switch (curFrame.value->getValueType()) {
+						case ValueType::Number: {
+							NumberValue *v = (NumberValue *)curFrame.value;
 
-						switch (v->getNumberKind()) {
-							case NumberKind::Integer: {
-								char s[sizeof("-9223372036854775808")];
+							switch (v->getNumberKind()) {
+								case NumberKind::Integer: {
+									char s[sizeof("-9223372036854775808")];
 
-								snprintf(s, sizeof(s), "%lld", v->asInteger());
-
-								WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write(s, strlen(s)));
-								break;
-							}
-							case NumberKind::Decimal: {
-								if (v->asDecimal() == INFINITY || isnan(v->asDecimal())) {
-									WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("null", sizeof("null") - 1));
-								} else {
-									char s[64];
-
-									snprintf(s, sizeof(s), "%.17g", v->asDecimal());
+									snprintf(s, sizeof(s), "%lld", v->asInteger());
 
 									WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write(s, strlen(s)));
+									break;
 								}
-								break;
+								case NumberKind::Decimal: {
+									if (v->asDecimal() == INFINITY || isnan(v->asDecimal())) {
+										WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("null", sizeof("null") - 1));
+									} else {
+										char s[64];
+
+										snprintf(s, sizeof(s), "%.17g", v->asDecimal());
+
+										WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write(s, strlen(s)));
+									}
+									break;
+								}
+								default:
+									std::terminate();
 							}
-							default:
-								std::terminate();
+							break;
 						}
-						break;
-					}
-					case ValueType::Array: {
-						BooleanValue *v = (BooleanValue *)curFrame.value;
+						case ValueType::Array: {
+							BooleanValue *v = (BooleanValue *)curFrame.value;
 
-						curFrame.state = DumpState::DumpingArray;
+							curFrame.state = DumpState::DumpingArray;
 
-						DumpingArrayDumpFrameData data = {
-							0
-						};
+							DumpingArrayDumpFrameData data = {
+								0
+							};
 
-						curFrame.data = std::move(data);
+							curFrame.data = std::move(data);
 
-						WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("[", 1));
+							WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("[", 1));
 
-						continue;
-					}
-					case ValueType::Object: {
-						ObjectValue *v = (ObjectValue *)curFrame.value;
-
-						curFrame.state = DumpState::DumpingObject;
-
-						DumpingObjectDumpFrameData data = {
-							v->beginConst()
-						};
-
-						curFrame.data = std::move(data);
-
-						WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("{", 1));
-
-						continue;
-					}
-					case ValueType::Boolean: {
-						BooleanValue *v = (BooleanValue *)curFrame.value;
-						if (v->data()) {
-							WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("true", sizeof("true") - 1));
-						} else {
-							WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("false", sizeof("false") - 1));
+							continue;
 						}
-						break;
-					}
-					case ValueType::Null:
-						WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("null", sizeof("null") - 1));
-						break;
-					case ValueType::String: {
-						const StringValue *v = (StringValue *)curFrame.value;
+						case ValueType::Object: {
+							ObjectValue *v = (ObjectValue *)curFrame.value;
 
-						WANDJSON_RETURN_IF_FALSE(_dumpString(dumpContext, v->data()));
+							curFrame.state = DumpState::DumpingObject;
 
-						break;
+							DumpingObjectDumpFrameData data = {
+								v->beginConst()
+							};
+
+							curFrame.data = std::move(data);
+
+							WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("{", 1));
+
+							continue;
+						}
+						case ValueType::Boolean: {
+							BooleanValue *v = (BooleanValue *)curFrame.value;
+							if (v->data()) {
+								WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("true", sizeof("true") - 1));
+							} else {
+								WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("false", sizeof("false") - 1));
+							}
+							break;
+						}
+						case ValueType::String: {
+							const StringValue *v = (StringValue *)curFrame.value;
+
+							WANDJSON_RETURN_IF_FALSE(_dumpString(dumpContext, v->data()));
+
+							break;
+						}
+						default:
+							std::terminate();
 					}
-					default:
-						std::terminate();
-				}
 
 				dumpContext.frames.popBack();
 				break;

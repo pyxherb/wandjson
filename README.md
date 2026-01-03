@@ -1,4 +1,6 @@
 # WandJSON
 
-WandJSON is an experimental exception-free JSON manipulating library based on
-PEFF.
+WandJSON is an experimental JSON manipulating library.
+
+It is exceptionless and reports OOM errors, custom allocator is also supported.
+

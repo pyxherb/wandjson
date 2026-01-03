@@ -65,7 +65,8 @@ namespace wandjson {
 
 		WANDJSON_FORCEINLINE void unwrap() noexcept {
 			if (_ptr) {
-				assert(("Unhandled WandJSON exception: ", false));
+				// Unhandled exception, terminate.
+				std::terminate();
 			}
 		}
 
@@ -86,9 +87,11 @@ namespace wandjson {
 #define WANDJSON_UNWRAP_EXCEPT(expr) (expr).unwrap()
 #define WANDJSON_RETURN_IF_EXCEPT(expr)                         \
 	if (wandjson::InternalExceptionPointer e = (expr); (bool)e) \
-	return e
+		return e;                                               \
+	else
 #define WANDJSON_RETURN_IF_EXCEPT_WITH_LVAR(name, expr) \
-	if ((bool)(name = (expr)))                         \
-		return name;
+	if ((bool)(name = (expr)))                          \
+		return name;                                    \
+	else
 
 #endif

@@ -140,17 +140,3 @@ WANDJSON_API void BooleanValue::dealloc(ValueDestructionInfo &destructionInfo) n
 WANDJSON_API BooleanValue *BooleanValue::alloc(peff::Alloc *allocator, bool data) noexcept {
 	return peff::allocAndConstruct<BooleanValue>(allocator, sizeof(std::max_align_t), allocator, data);
 }
-
-WANDJSON_API NullValue::NullValue(peff::Alloc *allocator) : Value(ValueType::Null, allocator) {
-}
-
-WANDJSON_API NullValue::~NullValue() {
-}
-
-WANDJSON_API void NullValue::dealloc(ValueDestructionInfo &destructionInfo) noexcept {
-	peff::destroyAndRelease<NullValue>(getAllocator(), this, sizeof(std::max_align_t));
-}
-
-WANDJSON_API NullValue *NullValue::alloc(peff::Alloc *allocator) noexcept {
-	return peff::allocAndConstruct<NullValue>(allocator, sizeof(std::max_align_t), allocator);
-}

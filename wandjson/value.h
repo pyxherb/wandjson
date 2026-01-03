@@ -13,8 +13,7 @@ namespace wandjson {
 		String,
 		Array,
 		Object,
-		Boolean,
-		Null
+		Boolean
 	};
 
 	class Value;
@@ -51,6 +50,26 @@ namespace wandjson {
 
 		WANDJSON_FORCEINLINE peff::Alloc *getAllocator() const noexcept {
 			return _allocator.get();
+		}
+
+		WANDJSON_FORCEINLINE bool isNumber() const noexcept {
+			return getValueType() == ValueType::Number;
+		}
+
+		WANDJSON_FORCEINLINE bool isString() const noexcept {
+			return getValueType() == ValueType::String;
+		}
+
+		WANDJSON_FORCEINLINE bool isArray() const noexcept {
+			return getValueType() == ValueType::Array;
+		}
+
+		WANDJSON_FORCEINLINE bool isObject() const noexcept {
+			return getValueType() == ValueType::Object;
+		}
+
+		WANDJSON_FORCEINLINE bool isBoolean() const noexcept {
+			return getValueType() == ValueType::Boolean;
 		}
 	};
 
@@ -378,15 +397,70 @@ namespace wandjson {
 		}
 	};
 
-	class NullValue final : public Value {
-	public:
-		WANDJSON_API NullValue(peff::Alloc *allocator);
-		WANDJSON_API virtual ~NullValue();
+	WANDJSON_FORCEINLINE bool isNumber(const Value *value) noexcept {
+		return value ? value->getValueType() == ValueType::Number : false;
+	}
 
-		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
+	WANDJSON_FORCEINLINE bool isString(const Value *value) noexcept {
+		return value ? value->getValueType() == ValueType::String : false;
+	}
 
-		WANDJSON_API static NullValue *alloc(peff::Alloc *allocator) noexcept;
-	};
+	WANDJSON_FORCEINLINE bool isArray(const Value *value) noexcept {
+		return value ? value->getValueType() == ValueType::Array : false;
+	}
+
+	WANDJSON_FORCEINLINE bool isObject(const Value *value) noexcept {
+		return value ? value->getValueType() == ValueType::Object : false;
+	}
+
+	WANDJSON_FORCEINLINE bool isBoolean(const Value *value) noexcept {
+		return value ? value->getValueType() == ValueType::Boolean : false;
+	}
+
+	WANDJSON_FORCEINLINE bool toNumber(Value *value, NumberValue *&valueOut) noexcept {
+		if (!value)
+			return false;
+		if (value->getValueType() != ValueType::Number)
+			return false;
+		valueOut = (NumberValue *)value;
+		return true;
+	}
+
+	WANDJSON_FORCEINLINE bool toString(Value *value, StringValue *&valueOut) noexcept {
+		if (!value)
+			return false;
+		if (value->getValueType() != ValueType::String)
+			return false;
+		valueOut = (StringValue *)value;
+		return true;
+	}
+
+	WANDJSON_FORCEINLINE bool toArray(Value *value, ArrayValue *&valueOut) noexcept {
+		if (!value)
+			return false;
+		if (value->getValueType() != ValueType::Array)
+			return false;
+		valueOut = (ArrayValue *)value;
+		return true;
+	}
+
+	WANDJSON_FORCEINLINE bool toObject(Value *value, ObjectValue *&valueOut) noexcept {
+		if (!value)
+			return false;
+		if (value->getValueType() != ValueType::Object)
+			return false;
+		valueOut = (ObjectValue *)value;
+		return true;
+	}
+
+	WANDJSON_FORCEINLINE bool toBoolean(Value *value, BooleanValue *&valueOut) noexcept {
+		if (!value)
+			return false;
+		if (value->getValueType() != ValueType::Boolean)
+			return false;
+		valueOut = (BooleanValue *)value;
+		return true;
+	}
 }
 
 #endif

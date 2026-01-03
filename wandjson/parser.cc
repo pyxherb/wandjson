@@ -365,9 +365,7 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::A
 							double v = strtod(s.data(), nullptr);
 
 							if ((v == INFINITY) || (isnan(v))) {
-								if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NullValue::alloc(parseContext.allocator.get())))) {
-									return OutOfMemoryError::alloc();
-								}
+								parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(nullptr);
 							} else {
 								if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), v)))) {
 									return OutOfMemoryError::alloc();
@@ -434,9 +432,7 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::A
 						}
 
 						parseContext.parseFrames.popBack();
-						if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NullValue::alloc(parseContext.allocator.get())))) {
-							return OutOfMemoryError::alloc();
-						}
+						parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(nullptr);
 						continue;
 					}
 					default:

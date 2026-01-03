@@ -4,6 +4,7 @@
 #include "except.h"
 #include "value.h"
 #include <peff/containers/list.h>
+#include <peff/containers/set.h>
 #include <variant>
 
 namespace wandjson {
