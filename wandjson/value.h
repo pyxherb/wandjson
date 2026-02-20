@@ -233,10 +233,8 @@ namespace wandjson {
 			return true;
 		}
 
-		[[nodiscard]] WANDJSON_FORCEINLINE bool remove(const std::string_view &name) {
-			if (!_data.remove(name))
-				return false;
-			return true;
+		[[nodiscard]] WANDJSON_FORCEINLINE void remove(const std::string_view &name) {
+			_data.remove(name);
 		}
 
 		WANDJSON_FORCEINLINE Value *at(const std::string_view &name) const {
