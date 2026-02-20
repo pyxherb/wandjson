@@ -45,23 +45,25 @@ namespace wandjson {
 			Reader *reader;
 			peff::List<ParseFrame> parseFrames;
 			peff::RcObjectPtr<peff::Alloc> allocator;
-			peff::String intermediateBuffer;
+			peff::Option<char> prevPeekedChar;
+			peff::DynArray<char> intermediateBuffer;
 			size_t i = 0;
 
 			WANDJSON_FORCEINLINE ParseContext(peff::Alloc *allocator, Reader *reader) : allocator(allocator), parseFrames(allocator), reader(reader), intermediateBuffer(allocator) {}
 
 			WANDJSON_FORCEINLINE size_t read(char *buffer, size_t size) {
+				size_t szRead = 0;
 				if (intermediateBuffer.size()) {
+					assert(!prevPeekedChar.hasValue());
 					if (intermediateBuffer.size() > size) {
 						memcpy(buffer, intermediateBuffer.data(), size);
 						memcpy(intermediateBuffer.data(), intermediateBuffer.data() + size, intermediateBuffer.size() - size);
-						if (!intermediateBuffer.resize(size)) {
+						if (!intermediateBuffer.resizeWithoutShrink(size)) {
 							// NOTE: Resizing the buffer without adjusting the capacity should always be true.
 							std::terminate();
 						}
 						return size;
 					} else {
-						size_t szRead = intermediateBuffer.size();
 						memcpy(buffer, intermediateBuffer.data(), intermediateBuffer.size());
 						intermediateBuffer.clear();
 						size_t szNewRead = reader->read(buffer + szRead, size - szRead);
@@ -69,13 +71,23 @@ namespace wandjson {
 						szRead += szNewRead;
 						return szRead;
 					}
+				} else if (prevPeekedChar.hasValue()) {
+					buffer[0] = prevPeekedChar.move();
+					buffer += 1;
+					size -= 1;
+					szRead += 1;
+					i += 1;
 				}
-				size_t szRead = reader->read(buffer, size);
+				szRead += reader->read(buffer, size);
 				i += szRead;
 				return szRead;
 			}
 
 			WANDJSON_FORCEINLINE char nextChar() {
+				if (prevPeekedChar) {
+					++i;
+					return prevPeekedChar.move();
+				}
 				char c;
 				if (intermediateBuffer.size()) {
 					c = intermediateBuffer.at(0);
@@ -83,8 +95,21 @@ namespace wandjson {
 					++i;
 					return c;
 				}
-				if(!read(&c, 1))
+				if (!read(&c, 1))
 					return '\0';
+				return c;
+			}
+
+			WANDJSON_FORCEINLINE char peekChar() {
+				if (prevPeekedChar.hasValue())
+					return prevPeekedChar.value();
+				char c;
+				if (intermediateBuffer.size()) {
+					return intermediateBuffer.at(0);
+				}
+				if (!reader->read(&c, 1))
+					return '\0';
+				prevPeekedChar = +c;
 				return c;
 			}
 		};
