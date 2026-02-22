@@ -160,27 +160,35 @@ namespace wandjson {
 		using Iterator = decltype(_data)::Iterator;
 		using ConstIterator = decltype(_data)::ConstIterator;
 
-		WANDJSON_FORCEINLINE Iterator begin() {
+		WANDJSON_FORCEINLINE Iterator begin() noexcept {
 			return _data.begin();
 		}
 
-		WANDJSON_FORCEINLINE ConstIterator begin() const {
+		WANDJSON_FORCEINLINE ConstIterator begin() const noexcept {
 			return _data.begin();
 		}
 
-		WANDJSON_FORCEINLINE Iterator end() {
+		WANDJSON_FORCEINLINE Iterator end() noexcept {
 			return _data.begin();
 		}
 
-		WANDJSON_FORCEINLINE ConstIterator end() const {
+		WANDJSON_FORCEINLINE ConstIterator end() const noexcept {
 			return _data.begin();
 		}
 
-		WANDJSON_FORCEINLINE const peff::DynArray<Value *> &data() const {
+		WANDJSON_FORCEINLINE bool pushBack(Value* value) noexcept {
+			return _data.pushBack(+value);
+		}
+
+		WANDJSON_FORCEINLINE bool pushFront(Value *value) noexcept {
+			return _data.pushFront(+value);
+		}
+
+		WANDJSON_FORCEINLINE const peff::DynArray<Value *> &data() const noexcept {
 			return _data;
 		}
 
-		WANDJSON_FORCEINLINE peff::DynArray<Value *> &data() {
+		WANDJSON_FORCEINLINE peff::DynArray<Value *> &data() noexcept {
 			return _data;
 		}
 	};
@@ -223,6 +231,10 @@ namespace wandjson {
 
 		WANDJSON_API static ObjectValue *alloc(peff::Alloc *allocator) noexcept;
 
+		/// @brief Insert a value. Note that the value will not be deleted if the insertion was failed.
+		/// @param name Name for insertion.
+		/// @param value Value to be inserted.
+		/// @return Whether the value is successfully inserted.
 		[[nodiscard]] WANDJSON_FORCEINLINE bool insert(peff::String &&name, Value *value) {
 			peff::String *s = peff::allocAndConstruct<peff::String>(getAllocator(), alignof(peff::String), std::move(name));
 			if (!s)
