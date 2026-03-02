@@ -58,7 +58,7 @@ namespace wandjson {
 					if (intermediateBuffer.size() > size) {
 						memcpy(buffer, intermediateBuffer.data(), size);
 						memcpy(intermediateBuffer.data(), intermediateBuffer.data() + size, intermediateBuffer.size() - size);
-						if (!intermediateBuffer.resizeWithoutShrink(size)) {
+						if (!intermediateBuffer.resize(size)) {
 							// NOTE: Resizing the buffer without adjusting the capacity should always be true.
 							std::terminate();
 						}
