@@ -176,7 +176,7 @@ namespace wandjson {
 			return _data.begin();
 		}
 
-		WANDJSON_FORCEINLINE bool pushBack(Value* value) noexcept {
+		WANDJSON_FORCEINLINE bool pushBack(Value *value) noexcept {
 			return _data.pushBack(+value);
 		}
 
@@ -197,10 +197,10 @@ namespace wandjson {
 
 	struct ObjectFieldWrapper {
 		ObjectValue *parent;
-		peff::String *name = nullptr;
+		peff::String name = nullptr;
 		Value *value = nullptr;
 
-		WANDJSON_FORCEINLINE ObjectFieldWrapper(ObjectValue *parent, peff::String *name, Value *value) : parent(parent), name(name), value(value) {}
+		WANDJSON_FORCEINLINE ObjectFieldWrapper(ObjectValue *parent, peff::String &&name, Value *value) : parent(parent), name(std::move(name)), value(value) {}
 		WANDJSON_API ObjectFieldWrapper(ObjectFieldWrapper &&rhs);
 		WANDJSON_API ~ObjectFieldWrapper();
 
@@ -221,7 +221,7 @@ namespace wandjson {
 
 	class ObjectValue final : public Value {
 	private:
-		peff::HashMap<std::string_view, ObjectFieldWrapper> _data;
+		peff::HashMap<std::string_view, ObjectFieldWrapper *> _data;
 
 	public:
 		WANDJSON_API ObjectValue(peff::Alloc *allocator);
@@ -236,26 +236,30 @@ namespace wandjson {
 		/// @param value Value to be inserted.
 		/// @return Whether the value is successfully inserted.
 		[[nodiscard]] WANDJSON_FORCEINLINE bool insert(peff::String &&name, Value *value) {
-			peff::String *s = peff::allocAndConstruct<peff::String>(getAllocator(), alignof(peff::String), std::move(name));
-			if (!s)
+			ObjectFieldWrapper *wrapper = peff::allocAndConstruct<ObjectFieldWrapper>(getAllocator(), alignof(ObjectFieldWrapper), this, std::move(name), value);
+			if (!wrapper)
 				return false;
-			if (!_data.insert(*s, ObjectFieldWrapper(this, s, nullptr)))
+			peff::ScopeGuard sg([this, wrapper]() noexcept {
+				peff::destroyAndRelease<ObjectFieldWrapper>(getAllocator(), wrapper, alignof(ObjectFieldWrapper));
+			});
+			if (!_data.insert(wrapper->name, +wrapper))
 				return false;
-			_data.at(*s).value = value;
+			sg.release();
 			return true;
 		}
 
-		[[nodiscard]] WANDJSON_FORCEINLINE void remove(const std::string_view &name) {
+		WANDJSON_FORCEINLINE void remove(const std::string_view &name) {
+			peff::destroyAndRelease<ObjectFieldWrapper>(getAllocator(), _data.at(name), alignof(ObjectFieldWrapper));
 			_data.remove(name);
 		}
 
 		WANDJSON_FORCEINLINE Value *at(const std::string_view &name) const {
-			return _data.at(name).value;
+			return _data.at(name)->value;
 		}
 
 		WANDJSON_FORCEINLINE Value *find(const std::string_view &name) const {
 			if (auto it = _data.find(name); it != _data.end())
-				return it.value().value;
+				return it.value()->value;
 			return nullptr;
 		}
 
@@ -275,7 +279,7 @@ namespace wandjson {
 			}
 
 			WANDJSON_FORCEINLINE Value *value() const {
-				return _iterator.value().value;
+				return _iterator.value()->value;
 			}
 
 			PEFF_FORCEINLINE std::pair<std::string_view, Value *> operator*() const {
@@ -326,7 +330,7 @@ namespace wandjson {
 			}
 
 			WANDJSON_FORCEINLINE Value *value() const {
-				return _iterator.value().value;
+				return _iterator.value()->value;
 			}
 
 			PEFF_FORCEINLINE std::pair<std::string_view, Value *> operator*() const {

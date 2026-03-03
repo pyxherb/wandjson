@@ -115,7 +115,7 @@ namespace wandjson {
 		};
 
 		WANDJSON_API bool isSpaceChar(char c);
-		WANDJSON_API [[nodiscard]] char skipWhitespaces(ParseContext &parseContext);
+		[[nodiscard]] WANDJSON_API char skipWhitespaces(ParseContext &parseContext);
 		WANDJSON_API InternalExceptionPointer parseStringEscape(ParseContext &parseContext, peff::String &stringOut);
 		WANDJSON_API InternalExceptionPointer parseString(ParseContext &parseContext, peff::String &stringOut);
 		WANDJSON_API InternalExceptionPointer parseValue(Reader *reader, peff::Alloc *allocator, Value *&valueOut);

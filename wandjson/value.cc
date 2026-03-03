@@ -85,15 +85,13 @@ WANDJSON_API ArrayValue *ArrayValue::alloc(peff::Alloc *allocator) noexcept {
 	return peff::allocAndConstruct<ArrayValue>(allocator, sizeof(std::max_align_t), allocator);
 }
 
-WANDJSON_API ObjectFieldWrapper::ObjectFieldWrapper(ObjectFieldWrapper &&rhs) : parent(rhs.parent), name(rhs.name), value(rhs.value){
+WANDJSON_API ObjectFieldWrapper::ObjectFieldWrapper(ObjectFieldWrapper &&rhs) : parent(rhs.parent), name(std::move(rhs.name)), value(rhs.value) {
 	rhs.parent = nullptr;
-	rhs.name = nullptr;
 	rhs.value = nullptr;
 }
 
-WANDJSON_API ObjectFieldWrapper &ObjectFieldWrapper::operator = (ObjectFieldWrapper &&rhs) {
+WANDJSON_API ObjectFieldWrapper &ObjectFieldWrapper::operator=(ObjectFieldWrapper &&rhs) {
 	parent = rhs.parent;
-	name = rhs.name;
 	value = rhs.value;
 	rhs.parent = nullptr;
 	rhs.name = nullptr;
@@ -102,9 +100,6 @@ WANDJSON_API ObjectFieldWrapper &ObjectFieldWrapper::operator = (ObjectFieldWrap
 }
 
 WANDJSON_API ObjectFieldWrapper::~ObjectFieldWrapper() {
-	if (name)
-		peff::destroyAndRelease<peff::String>(parent->getAllocator(), name, alignof(peff::String));
-
 	if (value)
 		parent->destructionInfo->pushDestructible(value);
 }
@@ -114,6 +109,8 @@ WANDJSON_API ObjectValue::ObjectValue(peff::Alloc *allocator) : Value(ValueType:
 
 WANDJSON_API ObjectValue::~ObjectValue() {
 	// All destructibles are pushed by the wrapper destructor.
+	for (auto i : _data)
+		peff::destroyAndRelease<ObjectFieldWrapper>(getAllocator(), i.second, alignof(ObjectFieldWrapper));
 	_data.clear();
 }
 

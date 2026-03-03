@@ -1,4 +1,5 @@
 #include "parser.h"
+#include <cmath>
 
 using namespace wandjson;
 using namespace wandjson::parser;
@@ -364,7 +365,7 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::A
 						if (isDecimal) {
 							double v = strtod(s.data(), nullptr);
 
-							if ((v == INFINITY) || (isnan(v))) {
+							if ((v == INFINITY) || (std::isnan(v))) {
 								parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(nullptr);
 							} else {
 								if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), v)))) {
@@ -372,7 +373,7 @@ WANDJSON_API InternalExceptionPointer parser::parseValue(Reader *reader, peff::A
 								}
 							}
 						} else {
-							if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), strtoll(s.data(), nullptr, 10))))) {
+							if (!(parseContext.parseFrames.back().receivedValue = std::unique_ptr<Value, ValueDeleter>(NumberValue::alloc(parseContext.allocator.get(), (int64_t)strtoll(s.data(), nullptr, 10))))) {
 								return OutOfMemoryError::alloc();
 							}
 						}

@@ -1,4 +1,5 @@
 #include "dump.h"
+#include <cmath>
 
 using namespace wandjson;
 
@@ -72,7 +73,7 @@ WANDJSON_API bool wandjson::_dumpValue(DumpContext &dumpContext) {
 									break;
 								}
 								case NumberKind::Decimal: {
-									if (v->asDecimal() == INFINITY || isnan(v->asDecimal())) {
+									if (v->asDecimal() == INFINITY || std::isnan(v->asDecimal())) {
 										WANDJSON_RETURN_IF_FALSE(dumpContext.writer->write("null", sizeof("null") - 1));
 									} else {
 										char s[64];

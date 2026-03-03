@@ -2,6 +2,7 @@
 #include <wandjson/dump.h>
 #include <peff/advutils/unique_ptr.h>
 #include <fstream>
+#include <algorithm>
 
 class ANSIWriter : public wandjson::Writer {
 public:
@@ -54,6 +55,8 @@ int main() {
 	if (!wandjson::dumpValue(peff::getDefaultAlloc(), &writer, v.get())) {
 		std::terminate();
 	}
+
+	fflush(stdout);
 
 	return 0;
 }
