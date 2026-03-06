@@ -34,7 +34,7 @@ namespace wandjson {
 			ParseState parseState = ParseState::Initial;
 
 			std::unique_ptr<ObjectValue, ValueDeleter> prevObject;
-			peff::Uninitialized<peff::String> prevKey;
+			peff::Option<peff::String> prevKey;
 
 			std::unique_ptr<ArrayValue, ValueDeleter> prevArray;
 
