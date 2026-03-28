@@ -26,15 +26,15 @@ int main() {
 	size_t size = is.tellg();
 	is.seekg(0, std::ios::beg);
 
-	std::unique_ptr<char[]> testXml(std::make_unique<char[]>(size));
-	is.read(testXml.get(), size);
+	std::unique_ptr<char[]> test_json(std::make_unique<char[]>(size));
+	is.read(test_json.get(), size);
 
 	peff::UniquePtr<wandjson::Value, wandjson::ValueDeleter> v;
 
-	std::string_view sv(testXml.get(), size);
+	std::string_view sv(test_json.get(), size);
 	wandjson::StringReader sr(sv);
 
-	wandjson::InternalExceptionPointer e = wandjson::parser::parseValue(&sr, peff::getDefaultAlloc(), v.getRef());
+	wandjson::InternalExceptionPointer e = wandjson::parser::parse_value(&sr, peff::default_allocator(), v.get_ref());
 
 	if (e) {
 		switch (e->kind) {
@@ -52,7 +52,7 @@ int main() {
 
 	ANSIWriter writer;
 
-	if (!wandjson::dumpValue(peff::getDefaultAlloc(), &writer, v.get())) {
+	if (!wandjson::dump_value(peff::default_allocator(), &writer, v.get())) {
 		std::terminate();
 	}
 

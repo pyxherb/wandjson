@@ -19,57 +19,57 @@ namespace wandjson {
 	class Value;
 
 	struct ValueDestructionInfo {
-		Value *destructibleValueList = nullptr;
+		Value *destructible_list = nullptr;
 
-		WANDJSON_API void pushDestructible(Value *astNode);
+		WANDJSON_API void push_destructible(Value *node);
 	};
 
 	struct ObjectFieldWrapper;
 
 	class Value {
 	private:
-		ValueType _valueType;
+		ValueType _value_type;
 		peff::RcObjectPtr<peff::Alloc> _allocator;
 
 	protected:
-		ValueDestructionInfo *destructionInfo = nullptr;
-		Value *nextDestructible = nullptr;
+		ValueDestructionInfo *destruction_info = nullptr;
+		Value *next_destructible = nullptr;
 
 		friend struct ObjectFieldWrapper;
 		friend struct ValueDestructionInfo;
 
 	public:
-		WANDJSON_API Value(ValueType nodeType, peff::Alloc *allocator);
+		WANDJSON_API Value(ValueType node_type, peff::Alloc *allocator);
 
 		WANDJSON_API void dealloc();
-		virtual void dealloc(ValueDestructionInfo &destructionInfo) = 0;
+		virtual void dealloc(ValueDestructionInfo &destruction_info) = 0;
 
-		WANDJSON_FORCEINLINE ValueType getValueType() const noexcept {
-			return _valueType;
+		WANDJSON_FORCEINLINE ValueType get_value_type() const noexcept {
+			return _value_type;
 		}
 
-		WANDJSON_FORCEINLINE peff::Alloc *getAllocator() const noexcept {
+		WANDJSON_FORCEINLINE peff::Alloc *get_allocator() const noexcept {
 			return _allocator.get();
 		}
 
-		WANDJSON_FORCEINLINE bool isNumber() const noexcept {
-			return getValueType() == ValueType::Number;
+		WANDJSON_FORCEINLINE bool is_number() const noexcept {
+			return get_value_type() == ValueType::Number;
 		}
 
-		WANDJSON_FORCEINLINE bool isString() const noexcept {
-			return getValueType() == ValueType::String;
+		WANDJSON_FORCEINLINE bool is_string() const noexcept {
+			return get_value_type() == ValueType::String;
 		}
 
-		WANDJSON_FORCEINLINE bool isArray() const noexcept {
-			return getValueType() == ValueType::Array;
+		WANDJSON_FORCEINLINE bool is_array() const noexcept {
+			return get_value_type() == ValueType::Array;
 		}
 
-		WANDJSON_FORCEINLINE bool isObject() const noexcept {
-			return getValueType() == ValueType::Object;
+		WANDJSON_FORCEINLINE bool is_object() const noexcept {
+			return get_value_type() == ValueType::Object;
 		}
 
-		WANDJSON_FORCEINLINE bool isBoolean() const noexcept {
-			return getValueType() == ValueType::Boolean;
+		WANDJSON_FORCEINLINE bool is_boolean() const noexcept {
+			return get_value_type() == ValueType::Boolean;
 		}
 	};
 
@@ -88,8 +88,8 @@ namespace wandjson {
 	class NumberValue final : public Value {
 	private:
 		union {
-			int64_t asInteger;
-			double asDecimal;
+			int64_t as_integer;
+			double as_decimal;
 		} _data;
 		NumberKind _numberKind;
 
@@ -98,29 +98,29 @@ namespace wandjson {
 		WANDJSON_API NumberValue(peff::Alloc *allocator, double data);
 		WANDJSON_API virtual ~NumberValue();
 
-		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
+		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destruction_info) noexcept override;
 
 		WANDJSON_API static NumberValue *alloc(peff::Alloc *allocator, int64_t data) noexcept;
 		WANDJSON_API static NumberValue *alloc(peff::Alloc *allocator, double data) noexcept;
 
-		WANDJSON_FORCEINLINE NumberKind getNumberKind() const {
+		WANDJSON_FORCEINLINE NumberKind get_number_type() const {
 			return _numberKind;
 		}
 
-		WANDJSON_FORCEINLINE int64_t &asInteger() {
-			return _data.asInteger;
+		WANDJSON_FORCEINLINE int64_t &as_integer() {
+			return _data.as_integer;
 		}
 
-		WANDJSON_FORCEINLINE const int64_t &asInteger() const {
-			return _data.asInteger;
+		WANDJSON_FORCEINLINE const int64_t &as_integer() const {
+			return _data.as_integer;
 		}
 
-		WANDJSON_FORCEINLINE double &asDecimal() {
-			return _data.asDecimal;
+		WANDJSON_FORCEINLINE double &as_decimal() {
+			return _data.as_decimal;
 		}
 
-		WANDJSON_FORCEINLINE const double &asDecimal() const {
-			return _data.asDecimal;
+		WANDJSON_FORCEINLINE const double &as_decimal() const {
+			return _data.as_decimal;
 		}
 	};
 
@@ -132,7 +132,7 @@ namespace wandjson {
 		WANDJSON_API StringValue(peff::Alloc *allocator, peff::String &&data);
 		WANDJSON_API virtual ~StringValue();
 
-		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
+		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destruction_info) noexcept override;
 
 		WANDJSON_API static StringValue *alloc(peff::Alloc *allocator, peff::String &&data) noexcept;
 
@@ -153,7 +153,7 @@ namespace wandjson {
 		WANDJSON_API ArrayValue(peff::Alloc *allocator);
 		WANDJSON_API virtual ~ArrayValue();
 
-		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
+		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destruction_info) noexcept override;
 
 		WANDJSON_API static ArrayValue *alloc(peff::Alloc *allocator) noexcept;
 
@@ -176,12 +176,12 @@ namespace wandjson {
 			return _data.begin();
 		}
 
-		WANDJSON_FORCEINLINE bool pushBack(Value *value) noexcept {
-			return _data.pushBack(+value);
+		WANDJSON_FORCEINLINE bool push_back(Value *value) noexcept {
+			return _data.push_back(+value);
 		}
 
-		WANDJSON_FORCEINLINE bool pushFront(Value *value) noexcept {
-			return _data.pushFront(+value);
+		WANDJSON_FORCEINLINE bool push_front(Value *value) noexcept {
+			return _data.push_front(+value);
 		}
 
 		WANDJSON_FORCEINLINE const peff::DynArray<Value *> &data() const noexcept {
@@ -227,7 +227,7 @@ namespace wandjson {
 		WANDJSON_API ObjectValue(peff::Alloc *allocator);
 		WANDJSON_API virtual ~ObjectValue();
 
-		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
+		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destruction_info) noexcept override;
 
 		WANDJSON_API static ObjectValue *alloc(peff::Alloc *allocator) noexcept;
 
@@ -236,11 +236,11 @@ namespace wandjson {
 		/// @param value Value to be inserted.
 		/// @return Whether the value is successfully inserted.
 		[[nodiscard]] WANDJSON_FORCEINLINE bool insert(peff::String &&name, Value *value) {
-			ObjectFieldWrapper *wrapper = peff::allocAndConstruct<ObjectFieldWrapper>(getAllocator(), alignof(ObjectFieldWrapper), this, std::move(name), value);
+			ObjectFieldWrapper *wrapper = peff::alloc_and_construct<ObjectFieldWrapper>(get_allocator(), alignof(ObjectFieldWrapper), this, std::move(name), value);
 			if (!wrapper)
 				return false;
 			peff::ScopeGuard sg([this, wrapper]() noexcept {
-				peff::destroyAndRelease<ObjectFieldWrapper>(getAllocator(), wrapper, alignof(ObjectFieldWrapper));
+				peff::destroy_and_release<ObjectFieldWrapper>(get_allocator(), wrapper, alignof(ObjectFieldWrapper));
 			});
 			if (!_data.insert(wrapper->name, +wrapper))
 				return false;
@@ -249,7 +249,7 @@ namespace wandjson {
 		}
 
 		WANDJSON_FORCEINLINE void remove(const std::string_view &name) {
-			peff::destroyAndRelease<ObjectFieldWrapper>(getAllocator(), _data.at(name), alignof(ObjectFieldWrapper));
+			peff::destroy_and_release<ObjectFieldWrapper>(get_allocator(), _data.at(name), alignof(ObjectFieldWrapper));
 			_data.remove(name);
 		}
 
@@ -373,7 +373,7 @@ namespace wandjson {
 			return ConstIterator(_data.begin());
 		}
 
-		WANDJSON_FORCEINLINE ConstIterator beginConst() const {
+		WANDJSON_FORCEINLINE ConstIterator begin_const() const {
 			return ConstIterator(_data.begin());
 		}
 
@@ -385,7 +385,7 @@ namespace wandjson {
 			return ConstIterator(_data.end());
 		}
 
-		WANDJSON_FORCEINLINE ConstIterator endConst() const {
+		WANDJSON_FORCEINLINE ConstIterator end_const() const {
 			return ConstIterator(_data.end());
 		}
 	};
@@ -398,7 +398,7 @@ namespace wandjson {
 		WANDJSON_API BooleanValue(peff::Alloc *allocator, bool data);
 		WANDJSON_API virtual ~BooleanValue();
 
-		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destructionInfo) noexcept override;
+		WANDJSON_API virtual void dealloc(ValueDestructionInfo &destruction_info) noexcept override;
 
 		WANDJSON_API static BooleanValue *alloc(peff::Alloc *allocator, bool data) noexcept;
 
@@ -411,68 +411,68 @@ namespace wandjson {
 		}
 	};
 
-	WANDJSON_FORCEINLINE bool isNumber(const Value *value) noexcept {
-		return value ? value->getValueType() == ValueType::Number : false;
+	WANDJSON_FORCEINLINE bool is_number(const Value *value) noexcept {
+		return value ? value->get_value_type() == ValueType::Number : false;
 	}
 
-	WANDJSON_FORCEINLINE bool isString(const Value *value) noexcept {
-		return value ? value->getValueType() == ValueType::String : false;
+	WANDJSON_FORCEINLINE bool is_string(const Value *value) noexcept {
+		return value ? value->get_value_type() == ValueType::String : false;
 	}
 
-	WANDJSON_FORCEINLINE bool isArray(const Value *value) noexcept {
-		return value ? value->getValueType() == ValueType::Array : false;
+	WANDJSON_FORCEINLINE bool is_array(const Value *value) noexcept {
+		return value ? value->get_value_type() == ValueType::Array : false;
 	}
 
-	WANDJSON_FORCEINLINE bool isObject(const Value *value) noexcept {
-		return value ? value->getValueType() == ValueType::Object : false;
+	WANDJSON_FORCEINLINE bool is_object(const Value *value) noexcept {
+		return value ? value->get_value_type() == ValueType::Object : false;
 	}
 
-	WANDJSON_FORCEINLINE bool isBoolean(const Value *value) noexcept {
-		return value ? value->getValueType() == ValueType::Boolean : false;
+	WANDJSON_FORCEINLINE bool is_boolean(const Value *value) noexcept {
+		return value ? value->get_value_type() == ValueType::Boolean : false;
 	}
 
-	WANDJSON_FORCEINLINE bool toNumber(Value *value, NumberValue *&valueOut) noexcept {
+	WANDJSON_FORCEINLINE bool to_number(Value *value, NumberValue *&value_out) noexcept {
 		if (!value)
 			return false;
-		if (value->getValueType() != ValueType::Number)
+		if (value->get_value_type() != ValueType::Number)
 			return false;
-		valueOut = (NumberValue *)value;
+		value_out = (NumberValue *)value;
 		return true;
 	}
 
-	WANDJSON_FORCEINLINE bool toString(Value *value, StringValue *&valueOut) noexcept {
+	WANDJSON_FORCEINLINE bool to_string(Value *value, StringValue *&value_out) noexcept {
 		if (!value)
 			return false;
-		if (value->getValueType() != ValueType::String)
+		if (value->get_value_type() != ValueType::String)
 			return false;
-		valueOut = (StringValue *)value;
+		value_out = (StringValue *)value;
 		return true;
 	}
 
-	WANDJSON_FORCEINLINE bool toArray(Value *value, ArrayValue *&valueOut) noexcept {
+	WANDJSON_FORCEINLINE bool to_array(Value *value, ArrayValue *&value_out) noexcept {
 		if (!value)
 			return false;
-		if (value->getValueType() != ValueType::Array)
+		if (value->get_value_type() != ValueType::Array)
 			return false;
-		valueOut = (ArrayValue *)value;
+		value_out = (ArrayValue *)value;
 		return true;
 	}
 
-	WANDJSON_FORCEINLINE bool toObject(Value *value, ObjectValue *&valueOut) noexcept {
+	WANDJSON_FORCEINLINE bool to_object(Value *value, ObjectValue *&value_out) noexcept {
 		if (!value)
 			return false;
-		if (value->getValueType() != ValueType::Object)
+		if (value->get_value_type() != ValueType::Object)
 			return false;
-		valueOut = (ObjectValue *)value;
+		value_out = (ObjectValue *)value;
 		return true;
 	}
 
-	WANDJSON_FORCEINLINE bool toBoolean(Value *value, BooleanValue *&valueOut) noexcept {
+	WANDJSON_FORCEINLINE bool to_boolean(Value *value, BooleanValue *&value_out) noexcept {
 		if (!value)
 			return false;
-		if (value->getValueType() != ValueType::Boolean)
+		if (value->get_value_type() != ValueType::Boolean)
 			return false;
-		valueOut = (BooleanValue *)value;
+		value_out = (BooleanValue *)value;
 		return true;
 	}
 }

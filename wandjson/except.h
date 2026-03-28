@@ -35,11 +35,11 @@ namespace wandjson {
 		WANDJSON_API static SyntaxError *alloc(peff::Alloc *allocator, size_t off, const char *message) noexcept;
 	};
 
-	WANDJSON_FORCEINLINE InternalExceptionPointer withOutOfMemoryErrorIfAllocFailed(InternalException *exceptionPtr) noexcept {
-		if (!exceptionPtr) {
+	WANDJSON_FORCEINLINE InternalExceptionPointer with_oom_error_if_alloc_failed(InternalException *except_ptr) noexcept {
+		if (!except_ptr) {
 			return OutOfMemoryError::alloc();
 		}
-		return exceptionPtr;
+		return except_ptr;
 	}
 }
 

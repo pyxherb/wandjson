@@ -23,11 +23,11 @@ namespace wandjson {
 	};
 
 	struct DumpingObjectDumpFrameData {
-		ObjectValue::ConstIterator prevIterator;
+		ObjectValue::ConstIterator prev_iter;
 	};
 
 	struct DumpingArrayDumpFrameData {
-		size_t prevIndex;
+		size_t prev_index;
 	};
 
 	struct DumpFrame {
@@ -42,10 +42,10 @@ namespace wandjson {
 		Writer *writer;
 	};
 
-	WANDJSON_API bool _dumpString(DumpContext &dumpContext, std::string_view s);
-	WANDJSON_API bool _dumpValue(DumpContext &dumpContext);
+	WANDJSON_API bool _dumpString(DumpContext &dump_context, std::string_view s);
+	WANDJSON_API bool _dumpValue(DumpContext &dump_context);
 
-	WANDJSON_API bool dumpValue(peff::Alloc *allocator, Writer *writer, Value *value);
+	WANDJSON_API bool dump_value(peff::Alloc *allocator, Writer *writer, Value *value);
 }
 
 #endif

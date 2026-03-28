@@ -29,7 +29,7 @@ WANDJSON_API const char *SyntaxError::what() const {
 }
 
 WANDJSON_API void SyntaxError::dealloc() {
-	peff::destroyAndRelease<SyntaxError>(allocator.get(), this, sizeof(std::max_align_t));
+	peff::destroy_and_release<SyntaxError>(allocator.get(), this, sizeof(std::max_align_t));
 }
 
 WANDJSON_API SyntaxError *SyntaxError::alloc(peff::Alloc *allocator, size_t off, const char *message) noexcept {
@@ -38,7 +38,7 @@ WANDJSON_API SyntaxError *SyntaxError::alloc(peff::Alloc *allocator, size_t off,
 	if (!buf)
 		return nullptr;
 
-	peff::constructAt<SyntaxError>((SyntaxError *)buf, allocator, off, message);
+	peff::construct_at<SyntaxError>((SyntaxError *)buf, allocator, off, message);
 
 	return (SyntaxError *)buf;
 }
