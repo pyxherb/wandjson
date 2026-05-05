@@ -22,7 +22,7 @@ namespace wandjson {
 	};
 
 	namespace parser {
-		enum class ParseState {
+		enum class ParseState : uint8_t {
 			Initial = 0,
 			StartParsingObject,
 			ParsingObject,
@@ -31,14 +31,14 @@ namespace wandjson {
 		};
 
 		struct ParseFrame {
-			ParseState parse_state = ParseState::Initial;
-
 			std::unique_ptr<ObjectValue, ValueDeleter> prev_object;
 			peff::Option<peff::String> prev_key;
 
 			std::unique_ptr<ArrayValue, ValueDeleter> prev_array;
 
 			std::unique_ptr<Value, ValueDeleter> received_value;
+
+			ParseState parse_state = ParseState::Initial;
 		};
 
 		struct ParseContext {

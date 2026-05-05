@@ -525,11 +525,18 @@ WANDJSON_API InternalExceptionPointer parser::parse_value(Reader *reader, peff::
 
 				current_frame.parse_state = ParseState::ParsingArray;
 
-				ParseFrame new_frame;
+				if (c != ']') {
+					ParseFrame new_frame;
 
-				new_frame.parse_state = ParseState::Initial;
-				if (!parse_context.parse_frames.push_back(std::move(new_frame))) {
-					return OutOfMemoryError::alloc();
+					new_frame.parse_state = ParseState::Initial;
+					if (!parse_context.parse_frames.push_back(std::move(new_frame))) {
+						return OutOfMemoryError::alloc();
+					}
+				} else {
+					std::unique_ptr<ArrayValue, ValueDeleter> object = std::move(current_frame.prev_array);
+					parse_context.parse_frames.pop_back();
+					parse_context.parse_frames.back().received_value = std::unique_ptr<Value, ValueDeleter>(object.release());
+					continue;
 				}
 
 				goto reparse_with_initial_char;
