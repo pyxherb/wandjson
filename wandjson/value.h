@@ -169,11 +169,11 @@ namespace wandjson {
 		}
 
 		WANDJSON_FORCEINLINE Iterator end() noexcept {
-			return _data.begin();
+			return _data.end();
 		}
 
 		WANDJSON_FORCEINLINE ConstIterator end() const noexcept {
-			return _data.begin();
+			return _data.end();
 		}
 
 		WANDJSON_FORCEINLINE bool push_back(Value *value) noexcept {
