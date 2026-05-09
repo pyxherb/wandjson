@@ -191,6 +191,18 @@ namespace wandjson {
 		WANDJSON_FORCEINLINE peff::DynArray<Value *> &data() noexcept {
 			return _data;
 		}
+
+		WANDJSON_FORCEINLINE size_t size() const noexcept {
+			return _data.size();
+		}
+
+		WANDJSON_FORCEINLINE Value *&at(size_t index) noexcept {
+			return _data.at(index);
+		}
+
+		WANDJSON_FORCEINLINE Value *const &at(size_t index) const noexcept {
+			return _data.at(index);
+		}
 	};
 
 	class ObjectValue;
